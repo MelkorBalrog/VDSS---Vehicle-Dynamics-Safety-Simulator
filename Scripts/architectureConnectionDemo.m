@@ -40,11 +40,6 @@ function architectureConnectionDemo
     typeDrop = uidropdown(f, 'Items', connectorTypes, 'Value', selectedType,
         'Position', [10 260 80 22], 'ValueChangedFcn', @(dd,ev)changeType(dd.Value));
 
-    connectorTypes = {'flow','fork','join','merge'};
-    selectedType = 'flow';
-    typeDrop = uidropdown(f, 'Items', connectorTypes, 'Value', selectedType,
-        'Position', [10 260 80 22], 'ValueChangedFcn', @(dd,ev)changeType(dd.Value));
-
     lineObj = drawline(ax, 'Position', [rectCenter(blockA.Position); rectCenter(blockB.Position)]);
     shapeObj = gobjects(0);
     lastValidPos = lineObj.Position;
@@ -186,16 +181,38 @@ function architectureConnectionDemo
     end
 
     function [valid,msg] = isValidSysML(srcType,dstType,connType,p1,p2)
-        if strcmp(srcType,'action') || strcmp(dstType,'action')
+        % Only block-to-block connections are permitted in this demo. An
+        % architecture connection must originate from the output side of
+        % block A and terminate at the input side of block B.
+        if ~strcmp(srcType,'block') || ~strcmp(dstType,'block')
             valid = false;
-            msg = 'Connections to actions are not allowed in this demo';
+            msg = 'Only block to block connections are allowed';
             return;
         end
+
+        if ~isOnRight(blockA.Position,p1) || ~isOnLeft(blockB.Position,p2)
+            valid = false;
+            msg = 'Connection must go from block A output to block B input';
+            return;
+        end
+
         switch connType
-            case {'flow','fork','join','merge'}
-                valid = strcmp(srcType,'block') && strcmp(dstType,'block') && ...
-                        isOnRight(blockA.Position,p1) && isOnLeft(blockB.Position,p2);
-                msg = 'Connections must run from block A output to block B input';
+            case 'flow'
+                valid = true;
+                msg = '';
+            case 'fork'
+                % fork represents one to many flow and is valid for block
+                % outputs in this simple demo
+                valid = true;
+                msg = '';
+            case 'join'
+                % join merges concurrent flows; valid orientation required
+                valid = true;
+                msg = '';
+            case 'merge'
+                % merge combines alternative flows
+                valid = true;
+                msg = '';
             otherwise
                 valid = false;
                 msg = 'Unknown connector type';
