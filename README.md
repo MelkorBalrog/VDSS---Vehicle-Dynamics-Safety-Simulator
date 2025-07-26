@@ -426,6 +426,29 @@ flowchart LR
 * **Jerk Controller** bounds the change of acceleration and steering rate using
   $\Delta u_{max} = J_{max} \Delta t$.
 
+#### Pure Pursuit Logic
+
+The path follower integrates prediction and smoothing steps to
+generate more stable steering commands than a basic pure pursuit
+implementation.
+
+```mermaid
+flowchart TD
+  state["Vehicle state<br>pos, speed, orientation"] --> pred["Predict future pose<br>(p_hat, theta_hat)"]
+  pred --> lookahead["Find lookahead point"]
+  lookahead --> pp["Pure Pursuit formula"]
+  pp --> plan["Plan path & zig-zag correction"]
+  plan --> gauss["Gaussian + low-pass filters"]
+  gauss --> gear["Gear shift logic"]
+  gear --> cmd["Steering command"]
+```
+
+Prediction uses
+\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_{pred}\) and
+\(\hat{p} = p + v t_{pred}[\cos\hat{\theta},\sin\hat{\theta}]\).
+`planPathWithPredictions` adjusts the trajectory and removes zig-zag oscillations
+before the final filters and gear shift rules.
+
 These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
 all signals.
