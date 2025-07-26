@@ -280,8 +280,13 @@ flowchart LR
 *Inputs*: tractor/trailer states
 *Outputs*: hitch forces and articulation angle
 
-The hitch applies a spring\–damper moment `M_h=k_h\,\delta+c_h\,\dot\delta`. The
-angle `\delta` is integrated with RK4 together with trailer yaw rate.
+The hitch imposes a rotational spring\–damper torque
+```math
+M_h = k_h\,\delta + c_h\,\dot\delta
+```
+where `\delta` is the articulation angle between tractor and trailer.
+`HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
+the trailer yaw rate.
 
 ### Interface Views
 The following diagrams offer focused views of how signals travel through the
@@ -478,64 +483,118 @@ params.gearRatios = [14.94 11.21 8.31 6.26 ...];
 The table below summarises the most important configuration options. Each value
 is loaded into the relevant mechanical block or controller at simulation start.
 
-| Parameter | Description |
-|-----------|-------------|
-|`includeTrailer`|Enable trailer in the model|
-|`tractorMass`, `trailerMass`|Vehicle and trailer mass in kilograms|
-|`initialVelocity`|Starting speed (m/s)|
-|`I_trailerMultiplier`|Scales trailer inertia|
-|`maxDeltaDeg`|Maximum articulation angle|
-|`dtMultiplier`|Time‑step scaling factor|
-|`windowSize`|Moving‑average window for smoothing|
-|`tractorLength`, `tractorWidth`, `tractorHeight`|Tractor body dimensions|
-|`tractorCoGHeight`|Height of tractor centre of gravity|
-|`tractorWheelbase`, `tractorTrackWidth`|Geometry affecting handling|
-|`tractorNumAxles`, `tractorAxleSpacing`|Axle configuration|
-|`numTiresPerAxleTractor`|Tires per axle on the tractor|
-|`trailerLength`, `trailerWidth`, `trailerHeight`|Trailer body dimensions|
-|`trailerCoGHeight`|Trailer centre of gravity height|
-|`trailerWheelbase`, `trailerTrackWidth`|Trailer geometry|
-|`trailerAxlesPerBox`|Axle count for each trailer box|
-|`trailerNumAxles`, `trailerNumBoxes`|Total axles and boxes|
-|`trailerAxleSpacing`|Spacing between trailer axles|
-|`trailerHitchDistance`, `tractorHitchDistance`|Hitch points|
-|`stiffnessX`, `stiffnessY`, `stiffnessZ`|Hitch stiffness along each axis|
-|`stiffnessRoll`, `stiffnessPitch`, `stiffnessYaw`|Rotational stiffness of the hitch|
-|`dampingX`, `dampingY`, `dampingZ`|Hitch damping along each axis|
-|`dampingRoll`, `dampingPitch`, `dampingYaw`|Rotational damping of the hitch|
-|`numTiresPerAxleTrailer`|Tires per axle on the trailer|
-|`maxSteeringAngleAtZeroSpeed`|Steering angle limit at standstill|
-|`steeringCurveFilePath`|Excel file with steering limits|
-|`maxSteeringSpeed`|Speed above which steering is limited|
-|`minAccelAtMaxSpeed`, `minDecelAtMaxSpeed`|Acceleration bounds|
-|`accelCurveFilePath`, `decelCurveFilePath`|Excel curves for the limiter|
-|`maxSpeedForAccelLimiting`|Upper speed for limiter lookup|
-|`Kp`, `Ki`, `Kd`|PID gains for speed control|
-|`lambda1Accel`, `lambda2Accel`, `lambda1Vel`, `lambda2Vel`, `lambda1Jerk`, `lambda2Jerk`|Levant differentiator parameters|
-|`enableSpeedController`|Toggle PID controller|
-|`maxSpeed`|Hard speed limit (m/s)|
-|`tractorTireHeight`, `tractorTireWidth`|Tire dimensions|
-|`trailerTireHeight`, `trailerTireWidth`|Trailer tire dimensions|
-|`airDensity`, `dragCoeff`|Aerodynamic coefficients|
-|`slopeAngle`, `roadFrictionCoefficient`|Road grade and friction|
-|`roadSurfaceType`, `roadRoughness`|Surface description|
-|`K_spring`, `C_damping`, `restLength`|Suspension properties|
-|`windSpeed`, `windAngleDeg`|Ambient wind settings|
-|`brakingForce`, `brakeEfficiency`, `brakeBias`, `brakeType`, `maxBrakingForce`|Brake system setup|
-|`maxGear`, `gearRatios`, `finalDriveRatio`|Transmission configuration|
-|`shiftUpSpeed`, `shiftDownSpeed`, `engineBrakeTorque`, `shiftDelay`|Shift logic|
-|`flatTireIndices`|Indices of tires that fail during run|
-|`vehicleType`|Preset for vehicle style|
-|`steeringCommands`, `accelerationCommands`, `tirePressureCommands`|Command scripts executed over time|
-|`torqueFileName`|Excel file with engine torque curve|
-|`maxClutchTorque`, `engagementSpeed`, `disengagementSpeed`|Clutch behaviour|
-|`maxEngineTorque`, `maxPower`, `idleRPM`, `redlineRPM`, `fuelConsumptionRate`|Engine characteristics|
-|`pressureMatrices`|Per-tire pressure tables|
-|`maxAccelAtZeroSpeed`, `maxDecelAtZeroSpeed`|Optional accel/decel caps|
-|`pCx1..pKy3`|Pacejka tire coefficients|
-|`spinnerConfigs`|Stiffness/damping for multi-trailer spinners|
-|`mapCommands`, `waypoints`|Track layout|
-
+| Parameter | GUI Label | Tab |
+|-----------|-----------|-----|
+|`includeTrailer`|Include Trailer|Basic Configuration|
+|`tractorMass`|Tractor Mass (kg)|Basic Configuration|
+|`trailerMass`|Trailer Box Weight (kg)|Basic Configuration|
+|`enableLogging`|Enable Logging|Basic Configuration|
+|`initialVelocity`|Initial Velocity (m/s)|Basic Configuration|
+|`vehicleType`|Vehicle Type|Basic Configuration|
+|`I_trailerMultiplier`|Trailer Inertia Multiplier|Advanced Configuration|
+|`maxDeltaDeg`|Max Articulation Angle (deg)|Advanced Configuration|
+|`dtMultiplier`|Time Step Multiplier|Advanced Configuration|
+|`windowSize`|Signal Smoothing Window Size (sec)|Advanced Configuration|
+|`steeringCurveFilePath`|Steering Curve File|Control Limits|
+|`maxSteeringAngleAtZeroSpeed`|Max Steering Angle at 0 Speed (deg)|Control Limits|
+|`maxSteeringSpeed`|Max Speed for Steering Limit (m/s)|Control Limits|
+|`minAccelAtMaxSpeed`|Acceleration at Max Speed (m/s²)|Control Limits|
+|`minDecelAtMaxSpeed`|Deceleration at Max Speed (m/s²)|Control Limits|
+|`accelCurveFilePath`|Acceleration Curve File|Control Limits|
+|`decelCurveFilePath`|Deceleration Curve File|Control Limits|
+|`maxSpeed`|Maximum Speed Limit (m/s)|Control Limits|
+|`maxSpeedForAccelLimiting`|Max Speed for Accel Limiting (m/s)|Control Limits|
+|`Kp`|Proportional Gain (Kp)|PID Controller|
+|`Ki`|Integral Gain (Ki)|PID Controller|
+|`Kd`|Derivative Gain (Kd)|PID Controller|
+|`lambda1Accel`|Lambda1 Accel|PID Controller|
+|`lambda2Accel`|Lambda2 Accel|PID Controller|
+|`lambda1Jerk`|Lambda1 Jerk|PID Controller|
+|`lambda2Jerk`|Lambda2 Jerk|PID Controller|
+|`lambda1Vel`|Lambda1 Velocity|PID Controller|
+|`lambda2Vel`|Lambda2 Velocity|PID Controller|
+|`enableSpeedController`|Enable Speed Controller|PID Controller|
+|`tractorLength`|Length (m)|Vehicle Parameters|
+|`tractorWidth`|Width (m)|Vehicle Parameters|
+|`tractorHeight`|Height (m)|Vehicle Parameters|
+|`tractorCoGHeight`|CG Height (m)|Vehicle Parameters|
+|`tractorWheelbase`|Wheelbase (m)|Vehicle Parameters|
+|`tractorTrackWidth`|Track Width (m)|Vehicle Parameters|
+|`tractorNumAxles`|Number of Axles (1-2)|Vehicle Parameters|
+|`tractorAxleSpacing`|Axle Spacing (m)|Vehicle Parameters|
+|`numTiresPerAxleTractor`|Number of Tires per Axle (Tractor)|Vehicle Parameters|
+|`trailerLength`|Length (m)|Trailer Parameters|
+|`trailerWidth`|Width (m)|Trailer Parameters|
+|`trailerHeight`|Height (m)|Trailer Parameters|
+|`trailerCoGHeight`|CG Height (m)|Trailer Parameters|
+|`trailerWheelbase`|Wheelbase (m)|Trailer Parameters|
+|`trailerTrackWidth`|Track Width (m)|Trailer Parameters|
+|`trailerAxleSpacing`|Axle Spacing (m)|Trailer Parameters|
+|`trailerHitchDistance`|Trailer Hitch Distance (m)|Trailer Parameters|
+|`tractorHitchDistance`|Tractor Hitch Distance (m)|Trailer Parameters|
+|`numTiresPerAxleTrailer`|Number of Tires per Axle on Trailer|Trailer Parameters|
+|`trailerNumBoxes`|Num Trailer Boxes|Trailer Parameters|
+|`trailerAxlesPerBox`|Axles per Box (comma-separated)|Trailer Parameters|
+|`trailerBoxSpacing`|Box Spacing (m)|Trailer Parameters|
+|`tractorTireHeight`|Tractor Tire Height (m)|Tires Configuration|
+|`tractorTireWidth`|Tractor Tire Width (m)|Tires Configuration|
+|`trailerTireHeight`|Trailer Tire Height (m)|Tires Configuration|
+|`trailerTireWidth`|Trailer Tire Width (m)|Tires Configuration|
+|`stiffnessX`|Stiffness X (N/m)|Stiffness & Damping|
+|`stiffnessY`|Stiffness Y (N/m)|Stiffness & Damping|
+|`stiffnessZ`|Stiffness Z (N/m)|Stiffness & Damping|
+|`stiffnessRoll`|Stiffness Roll (N·m/rad)|Stiffness & Damping|
+|`stiffnessPitch`|Stiffness Pitch (N·m/rad)|Stiffness & Damping|
+|`stiffnessYaw`|Stiffness Yaw (N·m/rad)|Stiffness & Damping|
+|`dampingX`|Damping X (N·s/m)|Stiffness & Damping|
+|`dampingY`|Damping Y (N·s/m)|Stiffness & Damping|
+|`dampingZ`|Damping Z (N·s/m)|Stiffness & Damping|
+|`dampingRoll`|Damping Roll (N·m·s/rad)|Stiffness & Damping|
+|`dampingPitch`|Damping Pitch (N·m·s/rad)|Stiffness & Damping|
+|`dampingYaw`|Damping Yaw (N·m·s/rad)|Stiffness & Damping|
+|`K_spring`|Spring Stiffness K_spring (N/m)|Suspension Model|
+|`C_damping`|Damping Coefficient C_damping (N·s/m)|Suspension Model|
+|`restLength`|Rest Length (m)|Suspension Model|
+|`maxEngineTorque`|Max Engine Torque (Nm)|Engine Configuration|
+|`maxPower`|Max Power (W)|Engine Configuration|
+|`idleRPM`|Idle RPM|Engine Configuration|
+|`redlineRPM`|Redline RPM|Engine Configuration|
+|`engineBrakeTorque`|Engine Brake Torque (Nm)|Engine Configuration|
+|`fuelConsumptionRate`|Fuel Consumption Rate (kg/s)|Engine Configuration|
+|`torqueFileName`|Torque File (Excel)|Engine Configuration|
+|`maxBrakingForce`|Max Braking Force (N)|Brake Configuration|
+|`brakingForce`|Braking Force (N)|Brake Configuration|
+|`brakeEfficiency`|Brake Efficiency (%)|Brake Configuration|
+|`brakeBias`|Brake Bias (Front/Rear %)|Brake Configuration|
+|`brakeType`|Brake Type|Brake Configuration|
+|`maxClutchTorque`|Max Clutch Torque (Nm)|Clutch Configuration|
+|`engagementSpeed`|Clutch Engagement Speed (1/10 s)|Clutch Configuration|
+|`disengagementSpeed`|Clutch Disengagement Speed (1/10 s)|Clutch Configuration|
+|`airDensity`|Air Density (kg/m³)|Aerodynamics|
+|`dragCoeff`|Drag Coefficient|Aerodynamics|
+|`windSpeed`|Wind Speed (m/s)|Aerodynamics|
+|`windAngleDeg`|Wind Angle (deg)|Aerodynamics|
+|`slopeAngle`|Slope Angle (degrees)|Road Conditions|
+|`roadFrictionCoefficient`|Road Friction Coefficient (μ)|Road Conditions|
+|`roadSurfaceType`|Road Surface Type|Road Conditions|
+|`roadRoughness`|Road Roughness|Road Conditions|
+|`maxGear`|Maximum Gear Number|Transmission Configuration|
+|`finalDriveRatio`|Final Drive Ratio|Transmission Configuration|
+|`gearRatios`|Gear Ratios|Gear Ratios|
+|`shiftUpSpeed`|Shift Up Speeds (m/s)|Transmission Configuration|
+|`shiftDownSpeed`|Shift Down Speeds (m/s)|Transmission Configuration|
+|`shiftDelay`|Shift Delay (s)|Transmission Configuration|
+|`flatTireIndices`|Flat Tire Indices|Commands|
+|`steeringCommands`|Steering Commands|Commands|
+|`accelerationCommands`|Acceleration Commands|Commands|
+|`tirePressureCommands`|Tire Pressure Commands|Commands|
+|`pressureMatrices`|Pressure Matrices|Pressure Matrices|
+|`maxAccelAtZeroSpeed`|Acceleration at 0 Speed (m/s²)|Control Limits|
+|`maxDecelAtZeroSpeed`|Deceleration at 0 Speed (m/s²)|Control Limits|
+|`pCx1..pKy3`|Pacejka Coefficients|Tire Model|
+|`spinnerConfigs`|Spinner Configs|Stiffness & Damping|
+|`mapCommands`|Map Commands|Mapping|
+|`waypoints`|Waypoints|Path Follower|
 ```mermaid
 flowchart LR
   Basic --> VehicleModel
