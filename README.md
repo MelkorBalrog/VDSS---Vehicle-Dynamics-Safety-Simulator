@@ -274,17 +274,55 @@ flowchart LR
 The hitch applies a spring\–damper moment `M_h=k_h\,\delta+c_h\,\dot\delta`. The
 angle `\delta` is integrated with RK4 together with trailer yaw rate.
 
+### Interface Views
+The following diagrams offer focused views of how signals travel through the
+subsystems for different motion components.
+
+#### Longitudinal Drive Chain
+```mermaid
+flowchart LR
+  throttleCmd[Throttle Cmd] --> Throttle
+  Throttle --> Engine
+  Engine --> Transmission
+  Transmission --> Differential
+  Differential --> Wheels
+  BrakeSystem --> Wheels
+  Wheels --> ForceCalc
+  ForceCalc --> Dynamics
+  Dynamics --> Kinematics
+  Kinematics --> VehicleState[Vehicle State]
+```
+
+#### Steering and Hitch Chain
+```mermaid
+flowchart LR
+  steerCmd[Steering Cmd] --> Ackermann
+  Ackermann --> Wheels
+  Wheels --> TireModel[Pacejka Tire Model]
+  HitchModel --> ForceCalc
+  TireModel --> ForceCalc
+  ForceCalc --> Dynamics
+  Dynamics --> Kinematics
+  Kinematics --> VehicleState
+```
+
 ## Vehicle Modeling Flow
 The following diagram summarizes how driver inputs propagate through the
 mechanical subsystems to produce vehicle motion.
 
 ```mermaid
 flowchart LR
+  subgraph Simulation
+    SimManager --> Controllers
+  end
   subgraph Driver Inputs
     th[Throttle Cmd]
     br[Brake Cmd]
     st[Steering Cmd]
   end
+  Controllers --> th
+  Controllers --> br
+  Controllers --> st
   th -->|"u_{th}"| Throttle
   Throttle -->|"\theta_{th}"| Engine
   Engine -->|"T_e,\omega_e"| Clutch
@@ -299,8 +337,10 @@ flowchart LR
   Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
   Pacejka -->|"F_x,F_y"| ForceCalc
   Suspension -->|"F_s"| ForceCalc
+  HitchModel -->|"F_h"| ForceCalc
   ForceCalc -->|"a_x,a_y,M_z"| Dynamics
-  Dynamics -->|"RK4"| Motion[Vehicle State]
+  Dynamics -->|"rates"| Kinematics
+  Kinematics -->|"RK4"| Motion[Vehicle State]
   Motion -->|"u,v,r"| ForceCalc
   Motion -->|"v_x,v_y"| Wheels
 ```
@@ -492,7 +532,29 @@ all updated consistently each time step.
 The dynamic equations determine the accelerations from forces, while the kinematic relations map these accelerations to changes in position and orientation. The RK4 integrator couples them so that forces acting on the vehicle directly influence its motion each timestep.
 
 ## Signal Filtering
-- **Moving average filters** smooth transmission shift logic and force outputs in `Transmission` and `ForceCalculator` (window sizes configurable).
-- **Gaussian filter** plus **low‑pass filter** smooth steering commands inside `purePursuit_PathFollower`.
+The simulator applies several filters to commands and forces so that abrupt
+changes do not destabilize the dynamics. The sequence for each signal is shown
+below.
 
-These filters reduce noise and abrupt changes in the generated commands for more stable simulations.
+```mermaid
+flowchart TD
+  thCmd[Throttle Cmd] --> RateLim[Rate Limiter]
+  RateLim --> Throttle
+  brCmd[Brake Cmd] --> BrakeSystem
+  steerCmd[Steer Cmd] --> Gauss[Gaussian]
+  Gauss --> LowPass
+  LowPass --> Ackermann
+  shiftSig[Shift Logic] --> MovAvg1[Moving Avg]
+  MovAvg1 --> Transmission
+  rawForces[Raw Forces] --> MovAvg2[Moving Avg]
+  MovAvg2 --> ForceCalc
+```
+
+- **Rate limiter** inside `Throttle` gradually applies driver throttle commands.
+- **Moving average filters** smooth gear shifting signals and the forces returned
+  by `ForceCalculator`.
+- **Gaussian filter** followed by a **low‑pass filter** cleans the steering angle
+  computed in `purePursuit_PathFollower`.
+
+These filters act every step in the order shown to yield smoother actuation and
+more stable simulations.
