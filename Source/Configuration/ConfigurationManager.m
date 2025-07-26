@@ -18,7 +18,7 @@
 % @file ConfigurationManager.m
 % @brief Handles saving and loading of simulation configurations.
 %        Provides persistence for simulation settings.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class ConfigurationManager

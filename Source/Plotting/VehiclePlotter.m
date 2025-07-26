@@ -18,7 +18,7 @@
 % @file VehiclePlotter.m
 % @brief Static utilities for drawing vehicle shapes in plots.
 %        Provides helper functions for geometry calculations.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class VehiclePlotter

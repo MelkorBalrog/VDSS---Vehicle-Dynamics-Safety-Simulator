@@ -18,7 +18,7 @@
 % * @file VehicleParameters.m
 % * @brief Defines the parameters for the Vehicle and Trailer Simulation.
 % */
-% * @author Miguel Marina
+% * @author Miguel Marina <karel.capek.robotics@gmail.com>
 classdef VehicleParameters < handle
     % VehicleParameters Defines parameters for the tractor and trailer.
     %

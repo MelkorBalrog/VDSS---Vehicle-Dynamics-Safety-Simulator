@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Truck3D.m
 @brief Assembles a tractor and trailer into a single truck for 3D animation.

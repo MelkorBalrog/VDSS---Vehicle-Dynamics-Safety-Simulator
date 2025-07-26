@@ -22,7 +22,7 @@
 %! calculate forces and moments exerted by the hitch and update the trailer's
 %! angular state using numerical integration.
 %!
-%! \author Miguel Marina
+%! \author Miguel Marina <karel.capek.robotics@gmail.com>
 
 classdef HitchModel
     %! \class HitchModel

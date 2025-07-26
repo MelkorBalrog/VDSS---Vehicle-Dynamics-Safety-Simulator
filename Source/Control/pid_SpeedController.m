@@ -18,7 +18,7 @@
 % @file pid_SpeedController.m
 % @brief PID-based speed controller with smoothing and cornering logic.
 %        Reduces speed for tight turns to avoid skidding.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef pid_SpeedController < handle

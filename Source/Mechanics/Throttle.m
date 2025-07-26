@@ -17,7 +17,7 @@
 %{
 % @file Throttle.m
 % @brief Models throttle input filtering and limits.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef Throttle < handle

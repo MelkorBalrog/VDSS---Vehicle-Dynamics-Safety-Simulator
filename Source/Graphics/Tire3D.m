@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Tire3D.m
 @brief Vehicle tire composed of multiple Boxels forming a ring.

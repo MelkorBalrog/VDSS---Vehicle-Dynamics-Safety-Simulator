@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Building3D.m
 @brief Simple example object representing a building constructed from Boxels.

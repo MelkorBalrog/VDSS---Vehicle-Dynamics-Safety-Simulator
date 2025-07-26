@@ -21,7 +21,7 @@
 %! It provides methods to calculate suspension forces and moments based on the vehicle's state and to update
 %! the rest length of the suspension based on the current load.
 %!
-%! \author Miguel Marina
+%! \author Miguel Marina <karel.capek.robotics@gmail.com>
 
 classdef LeafSpringSuspension
     %! \class LeafSpringSuspension

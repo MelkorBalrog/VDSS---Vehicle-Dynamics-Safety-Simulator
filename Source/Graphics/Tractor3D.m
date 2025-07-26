@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Tractor3D.m
 @brief Simple tractor body built from Boxels.

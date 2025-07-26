@@ -24,7 +24,7 @@
 % * This version has additional optional calculations at the end of `calculateForces`
 % * to enhance rollover and jackknife detection by combining roll rate and hitch angle dynamics.
 % *
-% * @author Miguel Marina
+% * @author Miguel Marina <karel.capek.robotics@gmail.com>
  % */
 % ============================================================================
 % Module Interface

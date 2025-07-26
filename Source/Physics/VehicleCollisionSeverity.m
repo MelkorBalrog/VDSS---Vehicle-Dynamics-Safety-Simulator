@@ -17,7 +17,7 @@
 %{
 % @file VehicleCollisionSeverity.m
 % @brief Estimates crash severity using 3D collision dynamics.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class VehicleCollisionSeverity

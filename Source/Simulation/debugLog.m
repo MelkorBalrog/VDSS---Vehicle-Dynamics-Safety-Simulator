@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %--------------------------------------------------------------------------
 % This file is part of VDSS - Vehicle Dynamics Safety Simulator.
 %

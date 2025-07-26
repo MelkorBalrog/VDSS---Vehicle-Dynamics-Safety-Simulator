@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Vehicle3D.m
 @brief Generic vehicle built from boxels and tires based on 2D plotting parameters.

@@ -17,7 +17,7 @@
 %{
 % @file Clutch.m
 % @brief Simple clutch model controlling torque transfer.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef Clutch < handle

@@ -18,7 +18,7 @@
 % @file UIManager.m
 % @brief Manages the graphical user interface for simulations.
 %        Handles callbacks and component creation.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class UIManager

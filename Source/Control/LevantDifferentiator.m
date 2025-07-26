@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 classdef LevantDifferentiator < handle
     %LEVANTDIFFERENTIATOR Implements a 1st-order Levant differentiator.
     %   This differentiator estimates the derivative of a signal using the

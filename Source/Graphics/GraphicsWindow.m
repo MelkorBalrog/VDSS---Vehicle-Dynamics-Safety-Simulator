@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file GraphicsWindow.m
 @brief Provides a window for rendering a World3D scene and running animations.

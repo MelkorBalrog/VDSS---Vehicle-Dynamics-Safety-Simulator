@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file VehiclePart3D.m
 @brief Base class for vehicle parts composed of Boxel objects.
