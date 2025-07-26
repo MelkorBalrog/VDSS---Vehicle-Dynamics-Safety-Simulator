@@ -202,6 +202,10 @@ function architectureConnectionDemo
             end
             valid = false;
             return;
+        elseif strcmp(dstType,'final') && ~strcmp(srcType,'initial')
+            valid = false;
+            msg = 'Final nodes cannot have incoming flows';
+            return;
         end
         if strcmp(dstType,'initial')
             valid = false; msg = 'Initial nodes have no incoming flows'; return;
