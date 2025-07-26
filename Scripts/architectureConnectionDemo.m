@@ -57,6 +57,7 @@ function architectureConnectionDemo
     lineObj = drawline(ax, 'Position', [rectCenter(blockA.Position); rectCenter(blockB.Position)]);
     shapeObj = gobjects(0);
     lastValidPos = lineObj.Position;
+    invalidShown = false;
     updateConnectorShape();
 
     addlistener(lineObj, 'MovingROI', @(s,e)previewConnection());
@@ -67,10 +68,15 @@ function architectureConnectionDemo
         p2 = lineObj.Position(2,:);
         srcType = elementAtPoint(p1);
         dstType = elementAtPoint(p2);
-        [valid,~] = isValidSysML(srcType, dstType, selectedType, p1, p2);
+        [valid,msg] = isValidSysML(srcType, dstType, selectedType, p1, p2);
         if valid
             lastValidPos = [p1; p2];
+            invalidShown = false;
         else
+            if ~invalidShown
+                uialert(f, msg, 'Invalid Connection');
+                invalidShown = true;
+            end
             lineObj.Position = lastValidPos;
         end
         updateConnectorShape();
@@ -93,6 +99,7 @@ function architectureConnectionDemo
             uialert(f, msg, 'Invalid Connection');
             lineObj.Position = lastValidPos;
         end
+        invalidShown = false;
         updateConnectorShape();
     end
 
@@ -188,7 +195,13 @@ function architectureConnectionDemo
     function [valid,msg] = isValidSysML(srcType,dstType,connType,p1,p2)
         % Basic set of SysML 2.0 rules for demo purposes
         if strcmp(srcType,'final')
-            valid = false; msg = 'Final nodes have no outgoing flows'; return;
+            if strcmp(dstType,'initial')
+                msg = 'Cannot connect Final node to Initial node';
+            else
+                msg = 'Final nodes have no outgoing flows';
+            end
+            valid = false;
+            return;
         end
         if strcmp(dstType,'initial')
             valid = false; msg = 'Initial nodes have no incoming flows'; return;
