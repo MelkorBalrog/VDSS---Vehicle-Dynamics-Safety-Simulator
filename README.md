@@ -65,9 +65,7 @@ Objects such as `Vehicle3D`, `Road3D` and `World3D` render 3‑D scenes for the 
 
 ### Mechanics
 Contains drivetrain and suspension models (`Engine`, `Transmission`, `BrakeSystem`, `Clutch`, `LeafSpringSuspension`, `Pacejka96TireModel`, etc.). The tire model uses the Pacejka 1996 formula:
-$$
-F_y = D \times \sin\bigl(C \times \tan^{-1}(B\alpha - E(B\alpha - \tan^{-1}(B\alpha)))\bigr)
-$$
+$F_y = D \times \sin\bigl(C \times \tan^{-1}(B\alpha - E(B\alpha - \tan^{-1}(B\alpha)))\bigr)$
 where `B`, `C`, `D` and `E` are stiffness parameters.
 
 #### Mechanical Model Blocks
@@ -91,30 +89,20 @@ flowchart LR
   Dynamics -->|"RK4"| Motion
 ```
 * **Engine** – accepts throttle position and produces engine torque
-$$
-T_e = T_{curve}(\omega_e) \times \theta_{th}
-$$
+$T_e = T_{curve}(\omega_e) \times \theta_{th}$
   limited by `maxTorque`.
 * **Clutch** – transmits torque when engaged using
-$$
-T_c = K_{clutch} \times (\omega_e - \omega_w)
-$$
+$T_c = K_{clutch} \times (\omega_e - \omega_w)$
 * **Transmission** – multiplies clutch torque by the selected gear ratio and
   final drive:
-$$
-T_w = T_c \times gearRatio \times finalDriveRatio
-$$
+$T_w = T_c \times gearRatio \times finalDriveRatio$
 * **BrakeSystem** – converts the brake pedal command into braking torque
   applied to the wheels.
-$$
-F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
-$$
+$F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
   The resulting force is distributed between the axles according to the
   brake bias.
 * **LeafSpringSuspension** – generates suspension force
-$$
-F_s = -K \times \Delta x - C \times v
-$$
+$F_s = -K \times \Delta x - C \times v$
   from spring displacement and velocity.
 * **AckermannGeometry** – maps steering wheel angle to left and right wheel
   angles for proper turning radii.
@@ -133,9 +121,7 @@ Each mechanical block acts as a black box with defined inputs and outputs:
 - **Transmission** – input: `T_c` and gear number; output wheel torque
   `T_w` and updated gear ratio.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
-$$
-T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
-$$
+$T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
 - **LeafSpringSuspension** – inputs: spring deflection `\Delta x` and
   velocity `v`; output suspension force `F_s`.
 - **AckermannGeometry** – input: desired steering angle `\delta`;
@@ -163,9 +149,7 @@ flowchart LR
 
 The throttle filters the driver command and rate limits the change in opening.
 The actual valve position is computed via a saturation nonlinearity:
-$$
-\theta_{th} = \mathrm{sat}(u_{th})
-$$
+$\theta_{th} = \mathrm{sat}(u_{th})$
 When the
 clutch is disengaged the delivered opening becomes
 $\theta_{adj}=\theta_{th}(1-e)$ where `e` is the clutch engagement percentage.
@@ -218,9 +202,7 @@ flowchart LR
 *Outputs*: wheel torque `T_w`
 
 Wheel torque is amplified by the gear and final drive:
-$$
-T_w = T_c \times \mathrm{gearRatio}(g) \times finalDrive
-$$
+$T_w = T_c \times \mathrm{gearRatio}(g) \times finalDrive$
 
 ###### BrakeSystem
 ```mermaid
@@ -233,9 +215,7 @@ flowchart LR
 *Outputs*: braking force `F_{brake}`
 
 The pedal command (u_b) is mapped to the total braking force:
-$$
-F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
-$$
+$F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
 This force is then split between the axles according to the brake bias.
 
 ###### LeafSpringSuspension
@@ -298,9 +278,7 @@ flowchart LR
 *Outputs*: hitch forces and articulation angle
 
 The hitch imposes a rotational spring\–damper torque
-$$
-M_h = k_h \times \delta + c_h \times \dot\delta
-$$
+$M_h = k_h \times \delta + c_h \times \dot\delta$
 where `\delta` is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
@@ -379,9 +357,7 @@ flowchart LR
 The labels show the key state variables exchanged between the blocks. For
 example the engine produces torque $T_e = f(\omega_e) \times \theta_{th}$ which the
 transmission multiplies to
-$$
-T_w = T_c \times \mathrm{gearRatio} \times finalDrive
-$$
+$T_w = T_c \times \mathrm{gearRatio} \times finalDrive$
 Wheels
 provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
 compute `F_x` and `F_y`. These forces together with the suspension reaction
@@ -426,87 +402,6 @@ flowchart LR
 * **Jerk Controller** bounds the change of acceleration and steering rate using
   $\Delta u_{max} = J_{max} \Delta t$.
 
-#### Pure Pursuit Logic
-
-The path follower integrates prediction and smoothing steps to
-generate more stable steering commands than a basic pure pursuit
-implementation.
-
-```mermaid
-flowchart TD
-  state["Vehicle state<br>pos, speed, orientation"] --> pred["Predict future pose<br>(p_hat, theta_hat)"]
-  pred --> lookahead["Find lookahead point"]
-  lookahead --> pp["Pure Pursuit formula"]
-  pp --> plan["Plan path & zig-zag correction"]
-  plan --> gauss["Gaussian + low-pass filters"]
-  gauss --> gear["Gear shift logic"]
-  gear --> cmd["Steering command"]
-```
-
-Prediction uses
-\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_{pred}\) and
-\(\hat{p} = p + v t_{pred}[\cos\hat{\theta},\sin\hat{\theta}]\).
-`planPathWithPredictions` adjusts the trajectory and removes zig-zag oscillations
-before the final filters and gear shift rules.
-
-#### Pure Pursuit Logic
-
-The path follower predicts vehicle motion a short time ahead, chooses a lookahead
-target and refines the trajectory to suppress oscillations. Interfaces between
-each step are explicit so later stages can apply limits and smoothing.
-
-```mermaid
-flowchart TD
-  S["Vehicle state<br/>p, v, \u03b8, \u03b4"] -->|"\u03b8\u0302 = \u03b8 + (v/L)\tan\u03b4\,t_p"| Ptheta["Heading prediction"]
-  S -->|"p\u0302 = p + v\,t_p[\cos\u03b8\u0302,\sin\u03b8\u0302]"| Ppos["Position prediction"]
-  Ptheta --> Look["Lookahead search"]
-  Ppos --> Look
-  Look -->|"\u03b1 = \mathrm{atan2}(y_l - p\u0302_y,\, x_l - p\u0302_x) - \u03b8\u0302"| Err["Heading error"]
-  Err -->|"\u03b4_{pp} = \mathrm{atan2}(2L\sin\u03b1,\, d_l)"| PP["Pure Pursuit"]
-  PP --> Plan["planPathWithPredictions"]
-  Plan --> ZigZag["Zig-zag correction"]
-  ZigZag --> Filt["Gaussian & low-pass"]
-  Filt --> Gear["Gear shift rules"]
-  Gear --> Cmd["Steering command \u03b4_{cmd}"]
-```
-
-Here
-\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
-\(\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]\). The angle
-\(\alpha\) measures the heading from the predicted position to the lookahead
-point, while \(d_l\) is the distance to that point. `planPathWithPredictions`
-uses these estimates to modify the reference path and remove zig-zag
-oscillations before the smoothing filters and gear-shift logic are applied.
-
-#### Pure Pursuit Logic
-
-The path follower predicts vehicle motion a short time ahead, chooses a lookahead
-target and refines the trajectory to suppress oscillations. Interfaces between
-each step are explicit so later stages can apply limits and smoothing.
-
-```mermaid
-flowchart TD
-  S["Vehicle state<br/>p, v, θ, δ"] -->|"θ̂ = θ + (v/L) tan(δ) tₚ"| Ptheta["Heading prediction"]
-  S -->|"p̂ = p + v tₚ[cos θ̂, sin θ̂]"| Ppos["Position prediction"]
-  Ptheta --> Look["Lookahead search"]
-  Ppos --> Look
-  Look -->|"α = atan2(y_l - p̂_y, x_l - p̂_x) - θ̂"| Err["Heading error"]
-  Err -->|"δ_pp = atan2(2L sin α, d_l)"| PP["Pure Pursuit"]
-  PP --> Plan["planPathWithPredictions"]
-  Plan --> ZigZag["Zig-zag correction"]
-  ZigZag --> Filt["Gaussian & low-pass"]
-  Filt --> Gear["Gear shift rules"]
-  Gear --> Cmd["Steering command δ_cmd"]
-```
-
-Here
-\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
-\(\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]\). The angle
-\(\alpha\) measures the heading from the predicted position to the lookahead
-point, while \(d_l\) is the distance to that point. `planPathWithPredictions`
-uses these estimates to modify the reference path and remove zig-zag
-oscillations before the smoothing filters and gear-shift logic are applied.
-
 These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
 all signals.
@@ -542,17 +437,13 @@ dependent curves.  The curves are provided as Excel files so they can be tuned
 without modifying the code.
 
 *Longitudinal limits*
-$$
-a_{cmd} = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)
-$$
+$a_{cmd} = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)$
 Acceleration and braking bounds $a_{max}(v)$ and $a_{min}(v)$ are read from
 `accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
 through a Gaussian filter and then ramped over several steps to avoid jerks.
 
 *Lateral limits*
-$$
-\delta_{lim} = \mathrm{interp}(v,\, speedData,\, maxAngleData)
-$$
+$\delta_{lim} = \mathrm{interp}(v,\, speedData,\, maxAngleData)$
 `steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
 The limiter clamps the requested angle to $\pm\delta_{lim}$ each update.
 
@@ -949,9 +840,7 @@ The dynamic equations determine the accelerations from forces, while the kinemat
 ## Derivatives, Integrals and the Levant Formula
 The simulator repeatedly differentiates and integrates signals to turn driver
 commands into motion.  Speed control uses a PID loop where
-$$
-a = K_p \times e + K_i \int e\,dt + K_d \times \frac{d e}{d t}
-$$
+$a = K_p \times e + K_i \int e\,dt + K_d \times \frac{d e}{d t}$
 The derivative term is obtained with the **Levant differentiator**, a robust
 sliding-mode algorithm implemented in `LevantDifferentiator`. It estimates
 `d(error)/dt` even when the measured speed is noisy. The integral term collects
@@ -996,23 +885,15 @@ more stable simulations.
 The mathematical form of each filter is:
 
 - **Rate limiter**
-  $$
-  y_k = \min\bigl( \max(x_k,\,y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t \bigr)
-  $$
+$y_k = \min\bigl( \max(x_k,\,y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t \bigr)$
   with rate limit $r_{\max}$.
 - **Gaussian filter**
-  $$
-  y_k = \sum_{i=-n}^{n} w_i x_{k-i}
-  $$
+$y_k = \sum_{i=-n}^{n} w_i x_{k-i}$
   where $w_i$ are normalised Gaussian weights.
 - **Moving average**
-  $$
-  y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i}
-  $$
+$y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i}$
 - **Low-pass filter**
-  $$
-  y_k = \alpha x_k + (1-\alpha) y_{k-1}
-  $$
+$y_k = \alpha x_k + (1-\alpha) y_{k-1}$
 
 Tuning parameters like $r_{\max}$, window size $N$ and coefficient $\alpha$
 are exposed in the GUI tabs so users can calibrate how aggressively commands are
