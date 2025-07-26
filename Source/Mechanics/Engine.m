@@ -17,7 +17,7 @@
 %{
 % @file Engine.m
 % @brief Simple engine model for torque and RPM updates.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef Engine < handle

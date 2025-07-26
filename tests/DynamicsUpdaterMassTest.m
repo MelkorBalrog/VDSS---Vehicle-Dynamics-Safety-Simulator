@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 function tests = DynamicsUpdaterMassTest
     tests = functiontests(localfunctions);
 end

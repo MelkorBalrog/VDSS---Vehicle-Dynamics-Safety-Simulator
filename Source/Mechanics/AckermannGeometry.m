@@ -17,7 +17,7 @@
 %{
 % @file AckermannGeometry.m
 % @brief Calculates steering angles using Ackermann geometry.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class AckermannGeometry

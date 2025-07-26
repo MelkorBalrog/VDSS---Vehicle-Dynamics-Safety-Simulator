@@ -17,7 +17,7 @@
 %{
 % @file SpeedControllerTest.m
 % @brief Unit tests for the SpeedController class.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 %% SpeedControllerTest

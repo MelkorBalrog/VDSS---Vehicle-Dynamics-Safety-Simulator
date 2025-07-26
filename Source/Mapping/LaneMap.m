@@ -17,7 +17,7 @@
 %{
 % @file LaneMap.m
 % @brief Represents a 2D lane occupancy grid used for mapping.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef LaneMap

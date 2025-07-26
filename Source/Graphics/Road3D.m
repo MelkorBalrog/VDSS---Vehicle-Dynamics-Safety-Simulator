@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Road3D.m
 @brief Simple road segment constructed from a single Boxel.

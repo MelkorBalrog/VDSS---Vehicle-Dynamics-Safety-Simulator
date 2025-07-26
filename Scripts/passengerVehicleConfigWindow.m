@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 function passengerVehicleConfigWindow
 % passengerVehicleConfigWindow Opens a simple UI with passenger car parameters
 %   Run inside MATLAB to review or modify the default passenger vehicle values.

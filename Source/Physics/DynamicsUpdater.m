@@ -18,7 +18,7 @@
 % @file DynamicsUpdater.m
 % @brief Updates vehicle dynamics using applied forces and moments.
 %        Includes roll dynamics in the state vector.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class DynamicsUpdater

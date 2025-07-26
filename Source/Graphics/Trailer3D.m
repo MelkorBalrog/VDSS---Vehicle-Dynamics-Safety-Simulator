@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Trailer3D.m
 @brief Simple trailer body built from Boxels.

@@ -18,7 +18,7 @@
 % @file DataManager.m
 % @brief Handles data loading and exporting for the simulation.
 %        Provides persistence utilities for the UI.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class DataManager

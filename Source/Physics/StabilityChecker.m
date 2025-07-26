@@ -17,7 +17,7 @@
 %{
 % @file StabilityChecker.m
 % @brief Monitors vehicle stability and detects rollover risk.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class StabilityChecker

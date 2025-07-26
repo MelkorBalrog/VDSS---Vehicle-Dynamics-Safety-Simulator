@@ -17,7 +17,7 @@
 %{
 % @file Pacejka96TireModel.m
 % @brief Implements the Pacejka '96 tire force model.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class Pacejka96TireModel

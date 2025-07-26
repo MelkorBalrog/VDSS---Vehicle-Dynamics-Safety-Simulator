@@ -17,7 +17,7 @@
 %{
 % @file Transmission.m
 % @brief Simple transmission model providing gear ratios.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef Transmission < handle

@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Object3D.m
 @brief Combines multiple Boxel objects into a single drawable graphic.

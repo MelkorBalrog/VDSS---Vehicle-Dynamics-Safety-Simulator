@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Boxel.m
 @brief Represents a simple 3D box element used to build graphics objects.

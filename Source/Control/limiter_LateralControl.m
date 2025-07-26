@@ -16,7 +16,7 @@
 %--------------------------------------------------------------------------
 %/**
 % * @file limiter_LateralControl.m
-% * @author Miguel Marina
+% * @author Miguel Marina <karel.capek.robotics@gmail.com>
 % * @date 2024-12-14
 % * @brief This class limits the steering angle of a truck based on a steering limit curve loaded from an Excel file.
 % *        The maximum allowable steering angle varies with speed as defined in the provided curve,

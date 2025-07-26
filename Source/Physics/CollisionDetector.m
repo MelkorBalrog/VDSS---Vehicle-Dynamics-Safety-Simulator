@@ -17,7 +17,7 @@
 %{
 % @file CollisionDetector.m
 % @brief Handles collision detection between rectangular vehicles using SAT.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 %/**
 % * @class CollisionDetector

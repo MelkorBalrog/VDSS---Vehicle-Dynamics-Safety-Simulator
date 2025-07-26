@@ -18,7 +18,7 @@
 % @file checkMaxDistanceAtMaxSpeed.m
 % @brief Compares maximum travel distances of two vehicles in a simulation.
 %        Loads logs from two runs and prints the difference.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 % MATLAB Script: checkMaxDistanceAtMaxSpeed.m

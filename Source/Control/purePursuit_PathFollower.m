@@ -18,7 +18,7 @@
 % @file purePursuit_PathFollower.m
 % @brief Generates adaptive waypoints for pure pursuit path following.
 %        Commands steering based on radius of curvature.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef purePursuit_PathFollower

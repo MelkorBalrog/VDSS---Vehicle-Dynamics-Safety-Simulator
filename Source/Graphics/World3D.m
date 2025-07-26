@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file World3D.m
 @brief Manages and draws a collection of Object3D instances to form a scene.

@@ -18,7 +18,7 @@
 % @file PlotManager.m
 % @brief Generates figures and manages plot updates for the simulation.
 %        Handles different views for vehicle trajectories.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef PlotManager < handle

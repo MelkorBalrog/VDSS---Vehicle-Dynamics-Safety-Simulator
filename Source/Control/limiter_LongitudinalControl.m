@@ -17,7 +17,7 @@
 %{
 % @file limiter_LongitudinalControl.m
 % @brief Limits acceleration and deceleration with smoothing and ramping.
-% @author Miguel Marina
+% @author Miguel Marina <karel.capek.robotics@gmail.com>
 %}
 
 classdef limiter_LongitudinalControl < handle

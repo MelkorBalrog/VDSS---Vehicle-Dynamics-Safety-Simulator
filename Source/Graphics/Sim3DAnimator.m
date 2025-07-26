@@ -1,3 +1,4 @@
+% Author: Miguel Marina <karel.capek.robotics@gmail.com>
 %{
 @file Sim3DAnimator.m
 @brief Animates simulation results using the 3D graphics framework.
