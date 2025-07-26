@@ -30,22 +30,116 @@ function architectureConnectionDemo
     blockA = drawrectangle(ax, 'Position', [50 120 100 60], 'Color', 'b');
     blockB = drawrectangle(ax, 'Position', [250 80 100 60], 'Color', 'r');
 
+    connectorTypes = {'flow','fork','join','merge'};
+    selectedType = 'flow';
+    typeDrop = uidropdown(f, 'Items', connectorTypes, 'Value', selectedType,
+        'Position', [10 260 80 22], 'ValueChangedFcn', @(dd,ev)changeType(dd.Value));
+
     lineObj = drawline(ax, 'Position', [rectCenter(blockA.Position); rectCenter(blockB.Position)]);
+    shapeObj = gobjects(0);
+    lastValidPos = lineObj.Position;
     updateConnection();
 
     addlistener(blockA, 'MovingROI', @(s,e)updateConnection());
     addlistener(blockB, 'MovingROI', @(s,e)updateConnection());
+    addlistener(blockA, 'ROIMoved', @(s,e)validateConnection());
+    addlistener(blockB, 'ROIMoved', @(s,e)validateConnection());
     addlistener(lineObj, 'MovingROI', @(s,e)constrainLine());
+    addlistener(lineObj, 'ROIMoved', @(s,e)validateConnection());
 
     function constrainLine()
         lineObj.Position(1,:) = intersectRect(blockA.Position, lineObj.Position(2,:));
         lineObj.Position(2,:) = intersectRect(blockB.Position, lineObj.Position(1,:));
     end
 
-    function updateConnection()
+function updateConnection()
         p1 = intersectRect(blockA.Position, lineObj.Position(2,:));
         p2 = intersectRect(blockB.Position, lineObj.Position(1,:));
         lineObj.Position = [p1; p2];
+        updateConnectorShape();
+    end
+
+    function changeType(newType)
+        selectedType = newType;
+        updateConnectorShape();
+    end
+
+    function validateConnection()
+        p1 = intersectRect(blockA.Position, lineObj.Position(2,:));
+        p2 = intersectRect(blockB.Position, lineObj.Position(1,:));
+        if isOnRight(blockA.Position, p1) && isOnLeft(blockB.Position, p2)
+            lastValidPos = [p1; p2];
+        else
+            uialert(f, 'Connection must go from block A output to block B input', 'Invalid Connection');
+            lineObj.Position = lastValidPos;
+        end
+        updateConnectorShape();
+    end
+
+    function tf = isOnRight(rect, p)
+        tf = abs(p(1) - (rect(1) + rect(3))) < 1e-3;
+    end
+
+    function tf = isOnLeft(rect, p)
+        tf = abs(p(1) - rect(1)) < 1e-3;
+    end
+
+    function updateConnectorShape()
+        if isgraphics(shapeObj)
+            delete(shapeObj)
+        end
+        p1 = lineObj.Position(1,:);
+        p2 = lineObj.Position(2,:);
+        mid = (p1 + p2)/2;
+        theta = atan2(p2(2)-p1(2), p2(1)-p1(1));
+        switch selectedType
+            case 'fork'
+                bar = drawBar(ax, mid, theta);
+                arr = drawArrow(ax, mid + rotVec([6 0], theta), theta);
+                shapeObj = [bar, arr];
+            case 'join'
+                bar = drawBar(ax, mid, theta);
+                arr = drawArrow(ax, mid - rotVec([6 0], theta), theta);
+                shapeObj = [arr, bar];
+            case 'merge'
+                dia = drawDiamond(ax, mid, theta);
+                arr = drawArrow(ax, mid + rotVec([6 0], theta), theta);
+                shapeObj = [dia, arr];
+            otherwise
+                shapeObj = drawArrow(ax, mid, theta);
+        end
+    end
+
+    function h = drawArrow(axc, pos, theta)
+        sz = 6;
+        p1 = pos + sz * [cos(theta) sin(theta)];
+        p2 = pos + sz/2 * [cos(theta+2*pi/3) sin(theta+2*pi/3)];
+        p3 = pos + sz/2 * [cos(theta-2*pi/3) sin(theta-2*pi/3)];
+        h = patch(axc, [p1(1) p2(1) p3(1)], [p1(2) p2(2) p3(2)], 'k', 'FaceColor', 'k');
+    end
+
+    function h = drawBar(axc, pos, theta)
+        L = 8; W = 2;
+        v1 = rotVec([0.5*L 0.5*W], theta);
+        v2 = rotVec([0.5*L -0.5*W], theta);
+        v3 = rotVec([-0.5*L -0.5*W], theta);
+        v4 = rotVec([-0.5*L 0.5*W], theta);
+        verts = pos + [v1; v2; v3; v4];
+        h = patch(axc, verts(:,1), verts(:,2), 'k', 'FaceColor', 'k');
+    end
+
+    function h = drawDiamond(axc, pos, theta)
+        L = 8; W = 6;
+        v1 = rotVec([0 L/2], theta);
+        v2 = rotVec([W/2 0], theta);
+        v3 = rotVec([0 -L/2], theta);
+        v4 = rotVec([-W/2 0], theta);
+        verts = pos + [v1; v2; v3; v4];
+        h = patch(axc, verts(:,1), verts(:,2), 'w', 'EdgeColor', 'k');
+    end
+
+    function v = rotVec(vec, ang)
+        v = [vec(1)*cos(ang)-vec(2)*sin(ang), vec(1)*sin(ang)+vec(2)*cos(ang)];
     end
 end
 
