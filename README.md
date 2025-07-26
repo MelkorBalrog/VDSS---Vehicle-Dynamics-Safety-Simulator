@@ -395,6 +395,26 @@ These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
 all signals.
 
+The diagram below places the controllers around the mechanical drivetrain to
+highlight how commands and feedback loop through the system.
+
+```mermaid
+flowchart TD
+  Inputs[Driver Inputs] --> PID
+  PID --> ACC --> LongLim
+  Inputs --> PP[Pure Pursuit]
+  PP --> LatLim
+  LongLim --> Jerk
+  LatLim --> Jerk
+  Jerk --> Throttle
+  Jerk --> Ackermann
+  Throttle --> Engine --> Transmission --> Differential --> Wheels
+  Ackermann --> Wheels
+  Wheels --> Feedback[Vehicle State]
+  Feedback --> PID
+  Feedback --> PP
+```
+
 #### Control Limiters
 Both steering and longitudinal actuation are limited according to speed
 dependent curves.  The curves are provided as Excel files so they can be tuned
@@ -402,7 +422,7 @@ without modifying the code.
 
 *Longitudinal limits*
 ```math
-a_{cmd} = \operatorname{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)
+a_{cmd} = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)
 ```
 Acceleration and braking bounds \(a_{max}(v)\) and \(a_{min}(v)\) are read from
 `accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
@@ -410,7 +430,7 @@ through a Gaussian filter and then ramped over several steps to avoid jerks.
 
 *Lateral limits*
 ```math
-\delta_{lim} = \operatorname{interp}(v, \text{speedData}, \text{maxAngleData})
+\delta_{lim} = \mathrm{interp}(v, \text{speedData}, \text{maxAngleData})
 ```
 `steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
 The limiter clamps the requested angle to \(\pm\delta_{lim}\) each update.
@@ -434,6 +454,73 @@ params.trailerMass = 7000;      % kg
 params.maxSpeed = 25.0;         % m/s speed limiter
 params.Kp = 1.0;                % PID proportional gain
 params.gearRatios = [14.94 11.21 8.31 6.26 ...];
+```
+
+### Full Parameter List
+The table below summarises the most important configuration options. Each value
+is loaded into the relevant mechanical block or controller at simulation start.
+
+| Parameter | Description |
+|-----------|-------------|
+|`includeTrailer`|Enable trailer in the model|
+|`tractorMass`, `trailerMass`|Vehicle and trailer mass in kilograms|
+|`initialVelocity`|Starting speed (m/s)|
+|`I_trailerMultiplier`|Scales trailer inertia|
+|`maxDeltaDeg`|Maximum articulation angle|
+|`dtMultiplier`|Time‑step scaling factor|
+|`windowSize`|Moving‑average window for smoothing|
+|`tractorLength`, `tractorWidth`, `tractorHeight`|Tractor body dimensions|
+|`tractorCoGHeight`|Height of tractor centre of gravity|
+|`tractorWheelbase`, `tractorTrackWidth`|Geometry affecting handling|
+|`tractorNumAxles`, `tractorAxleSpacing`|Axle configuration|
+|`numTiresPerAxleTractor`|Tires per axle on the tractor|
+|`trailerLength`, `trailerWidth`, `trailerHeight`|Trailer body dimensions|
+|`trailerCoGHeight`|Trailer centre of gravity height|
+|`trailerWheelbase`, `trailerTrackWidth`|Trailer geometry|
+|`trailerAxlesPerBox`|Axle count for each trailer box|
+|`trailerNumAxles`, `trailerNumBoxes`|Total axles and boxes|
+|`trailerAxleSpacing`|Spacing between trailer axles|
+|`trailerHitchDistance`, `tractorHitchDistance`|Hitch points|
+|`numTiresPerAxleTrailer`|Tires per axle on the trailer|
+|`maxSteeringAngleAtZeroSpeed`|Steering angle limit at standstill|
+|`steeringCurveFilePath`|Excel file with steering limits|
+|`maxSteeringSpeed`|Speed above which steering is limited|
+|`minAccelAtMaxSpeed`, `minDecelAtMaxSpeed`|Acceleration bounds|
+|`accelCurveFilePath`, `decelCurveFilePath`|Excel curves for the limiter|
+|`maxSpeedForAccelLimiting`|Upper speed for limiter lookup|
+|`Kp`, `Ki`, `Kd`|PID gains for speed control|
+|`lambda1Accel`, `lambda2Accel`, `lambda1Vel`, `lambda2Vel`, `lambda1Jerk`, `lambda2Jerk`|Levant differentiator parameters|
+|`enableSpeedController`|Toggle PID controller|
+|`maxSpeed`|Hard speed limit (m/s)|
+|`tractorTireHeight`, `tractorTireWidth`|Tire dimensions|
+|`trailerTireHeight`, `trailerTireWidth`|Trailer tire dimensions|
+|`airDensity`, `dragCoeff`|Aerodynamic coefficients|
+|`slopeAngle`, `roadFrictionCoefficient`|Road grade and friction|
+|`roadSurfaceType`, `roadRoughness`|Surface description|
+|`K_spring`, `C_damping`, `restLength`|Suspension properties|
+|`windSpeed`, `windAngleDeg`|Ambient wind settings|
+|`brakingForce`, `brakeEfficiency`, `brakeBias`, `brakeType`, `maxBrakingForce`|Brake system setup|
+|`maxGear`, `gearRatios`, `finalDriveRatio`|Transmission configuration|
+|`shiftUpSpeed`, `shiftDownSpeed`, `engineBrakeTorque`, `shiftDelay`|Shift logic|
+|`flatTireIndices`|Indices of tires that fail during run|
+|`vehicleType`|Preset for vehicle style|
+|`steeringCommands`, `accelerationCommands`, `tirePressureCommands`|Command scripts executed over time|
+|`torqueFileName`|Excel file with engine torque curve|
+|`maxClutchTorque`, `engagementSpeed`, `disengagementSpeed`|Clutch behaviour|
+|`mapCommands`, `waypoints`|Track layout|
+
+```mermaid
+flowchart LR
+  Basic --> VehicleModel
+  Geometry --> VehicleModel
+  Tire --> Wheels
+  Suspension --> SuspensionBlock[LeafSpring]
+  EngineParams --> Engine
+  TransmissionParams --> Transmission
+  BrakeParams --> BrakeSystem
+  Control --> Controllers
+  Aerodynamics --> ForceCalc
+  Road --> SurfaceFrictionManager
 ```
 
 ### GUI Tabs and Inputs
