@@ -57,6 +57,7 @@ function architectureConnectionDemo
     lineObj = drawline(ax, 'Position', [rectCenter(blockA.Position); rectCenter(blockB.Position)]);
     shapeObj = gobjects(0);
     lastValidPos = lineObj.Position;
+    invalidShown = false;
     updateConnectorShape();
 
     addlistener(lineObj, 'MovingROI', @(s,e)previewConnection());
@@ -67,10 +68,15 @@ function architectureConnectionDemo
         p2 = lineObj.Position(2,:);
         srcType = elementAtPoint(p1);
         dstType = elementAtPoint(p2);
-        [valid,~] = isValidSysML(srcType, dstType, selectedType, p1, p2);
+        [valid,msg] = isValidSysML(srcType, dstType, selectedType, p1, p2);
         if valid
             lastValidPos = [p1; p2];
+            invalidShown = false;
         else
+            if ~invalidShown
+                uialert(f, msg, 'Invalid Connection');
+                invalidShown = true;
+            end
             lineObj.Position = lastValidPos;
         end
         updateConnectorShape();
@@ -93,6 +99,7 @@ function architectureConnectionDemo
             uialert(f, msg, 'Invalid Connection');
             lineObj.Position = lastValidPos;
         end
+        invalidShown = false;
         updateConnectorShape();
     end
 
