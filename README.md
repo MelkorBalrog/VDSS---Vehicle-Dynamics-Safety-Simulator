@@ -73,15 +73,15 @@ The main mechanical components behave like interconnected black boxes with clear
 inputs and outputs. Their relationships can be visualized using Mermaid:
 ```mermaid
 flowchart LR
-  Throttle -->|"\theta_{th}"| Engine
-  Engine -->|"T_e,\omega_e"| Clutch
-  Wheels -->|"\omega_w"| Clutch
+  Throttle -->|"θ_th"| Engine
+  Engine -->|"T_e, ω_e"| Clutch
+  Wheels -->|"ω_w"| Clutch
   Clutch -->|"T_c"| Transmission
   Transmission -->|"T_w"| Differential
-  Differential -->|"T_{axle}"| Wheels
+  Differential -->|"T_axle"| Wheels
   BrakeSystem -->|"T_b"| Wheels
-  Ackermann -->|"\delta_i,\delta_o"| Wheels
-  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Ackermann -->|"δ_i, δ_o"| Wheels
+  Wheels -->|"κ, α"| Pacejka[Pacejka Tire Model]
   Pacejka -->|"F_x,F_y"| Chassis
   Suspension -->|"F_s"| Chassis
   Chassis -->|"u,v,r"| ForceCalc
@@ -113,22 +113,22 @@ $F_s = -K \times \Delta x - C \times v$
 
 ##### Interfaces
 Each mechanical block acts as a black box with defined inputs and outputs:
-- **Throttle** – input: pedal command `u_{th}`; output: throttle position
-  `\theta_{th}`.
-- **Engine** – input: `\theta_{th}`; output engine torque `T_e` as above.
+- **Throttle** – input: pedal command `u_th`; output: throttle position
+  `$\theta_{th}$`.
+- **Engine** – input: `$\theta_{th}$`; output engine torque `T_e` as above.
 - **Clutch** – input: engagement state, engine and wheel speeds;
   outputs transmitted torque `T_c`.
 - **Transmission** – input: `T_c` and gear number; output wheel torque
   `T_w` and updated gear ratio.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
 $T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
-- **LeafSpringSuspension** – inputs: spring deflection `\Delta x` and
+- **LeafSpringSuspension** – inputs: spring deflection `$\Delta x$` and
   velocity `v`; output suspension force `F_s`.
-- **AckermannGeometry** – input: desired steering angle `\delta`;
+- **AckermannGeometry** – input: desired steering angle `$\delta$`;
   outputs inner and outer wheel angles calculated via
   $\tan\delta_{i,o} = L/(R \mp W/2)$ where `L` is wheelbase and
   `W` track width.
-- **Pacejka96TireModel** – inputs: slip angle `\alpha`, slip ratio `\kappa`
+- **Pacejka96TireModel** – inputs: slip angle `$\alpha$`, slip ratio `$\kappa$`
   and normal load `F_z`; outputs lateral and longitudinal forces using the
   formulas above.
 - **HitchModel** – inputs: tractor and trailer states; outputs hitch forces,
@@ -141,15 +141,15 @@ inputs, outputs and a short physical model.
 ###### Throttle
 ```mermaid
 flowchart LR
-  u_th(["u_{th}"]) --> Throttle[Throttle]
-  Throttle --> theta_th(["\theta_{th}"])
+  u_th(["u_th"]) --> Throttle[Throttle]
+  Throttle --> theta_th(["θ_th"])
 ```
-*Inputs*: driver command `u_{th}`
-*Outputs*: opening angle `\theta_{th}`
+*Inputs*: driver command `u_th`
+*Outputs*: opening angle `$\theta_{th}$`
 
 The throttle filters the driver command and rate limits the change in opening.
 The actual valve position is computed via a saturation nonlinearity:
-$\theta_{th} = \mathrm{sat}(u_{th})$
+$\theta_{th} = \mathrm{sat}(u_th)$
 When the
 clutch is disengaged the delivered opening becomes
 $\theta_{adj}=\theta_{th}(1-e)$ where `e` is the clutch engagement percentage.
@@ -157,14 +157,14 @@ $\theta_{adj}=\theta_{th}(1-e)$ where `e` is the clutch engagement percentage.
 ###### Engine
 ```mermaid
 flowchart LR
-  theta_th(["\theta_{th}"])
+  theta_th(["θ_th"])
   load_torque(["T_{load}"])
   theta_th --> Engine
   load_torque --> Engine
   Engine --> T_e(["T_e"])
-  Engine --> omega_e(["\omega_e"])
+  Engine --> omega_e(["ω_e"])
 ```
-*Inputs*: `\theta_{th}`, load torque `T_{load}`
+*Inputs*: `$\theta_{th}$`, load torque `T_{load}`
 *Outputs*: engine torque `T_e`, engine speed `\omega_e`
 
 Represents a diesel engine whose torque curve $T_e = f(\omega_e)$ is measured
@@ -176,8 +176,8 @@ $\dot{\omega}_e = (T_e - T_{load})/I_e$ where `I_e` is engine inertia.
 ```mermaid
 flowchart LR
   engage(["e"])
-  omega_e(["\omega_e"])
-  omega_w(["\omega_w"])
+  omega_e(["ω_e"])
+  omega_w(["ω_w"])
   engage --> Clutch
   omega_e --> Clutch
   omega_w --> Clutch
@@ -227,7 +227,7 @@ flowchart LR
   vel --> Suspension
   Suspension --> F_s(["F_s"])
 ```
-*Inputs*: spring deflection `\Delta x`, velocity `v`
+*Inputs*: spring deflection `$\Delta x$`, velocity `v`
 *Outputs*: suspension force `F_s`
 
 Suspension forces use a spring damper relation
@@ -237,22 +237,22 @@ acceleration.
 ###### AckermannGeometry
 ```mermaid
 flowchart LR
-  delta(["\delta"])
+  delta(["δ"])
   delta --> Ackermann
-  Ackermann --> delta_i(["\delta_i"])
-  Ackermann --> delta_o(["\delta_o"])
+  Ackermann --> delta_i(["δ_i"])
+  Ackermann --> delta_o(["δ_o"])
 ```
-*Input*: desired steering angle `\delta`
-*Outputs*: inner/outer wheel angles `\delta_i`,`\delta_o`
+*Input*: desired steering angle `$\delta$`
+*Outputs*: inner/outer wheel angles `$\delta_i$`, `$\delta_o$`
 
 The geometry obeys
-`\tan\delta_{i,o}=L/(R\mp W/2)` where `L` is wheelbase and `W` track width.
+`$\tan\delta_{i,o} = L/(R \mp W/2)$` where `L` is wheelbase and `W` track width.
 
 ###### Pacejka96TireModel and PacejkaMagicFormula
 ```mermaid
 flowchart LR
-  alpha(["\alpha"])
-  kappa(["\kappa"])
+  alpha(["α"])
+  kappa(["κ"])
   Fz(["F_z"])
   alpha --> Tire
   kappa --> Tire
@@ -260,7 +260,7 @@ flowchart LR
   Tire --> F_x(["F_x"])
   Tire --> F_y(["F_y"])
 ```
-*Inputs*: slip angle `\alpha`, slip ratio `\kappa`, normal load `F_z`
+*Inputs*: slip angle `$\alpha$`, slip ratio `$\kappa$`, normal load `F_z`
 *Outputs*: tire forces `F_x`,`F_y`
 
 Both tire models implement the Pacejka equations to provide longitudinal and
@@ -272,7 +272,7 @@ flowchart LR
   states(["states"])
   states --> Hitch
   Hitch --> F_h(["F_h"])
-  Hitch --> delta(["\delta"])
+  Hitch --> delta(["δ"])
 ```
 *Inputs*: tractor/trailer states
 *Outputs*: hitch forces and articulation angle
@@ -332,18 +332,18 @@ flowchart LR
   Controllers --> th
   Controllers --> br
   Controllers --> st
-  th -->|"u_{th}"| Throttle
-  Throttle -->|"\theta_{th}"| Engine
-  Engine -->|"T_e,\omega_e"| Clutch
-  Wheels -->|"\omega_w"| Clutch
+  th -->|"u_th"| Throttle
+  Throttle -->|"θ_th"| Engine
+  Engine -->|"T_e, ω_e"| Clutch
+  Wheels -->|"ω_w"| Clutch
   Clutch -->|"T_c"| Transmission
   Transmission -->|"T_w"| Differential
-  Differential -->|"T_{axle}"| Wheels
+  Differential -->|"T_axle"| Wheels
   br -->|"u_b"| BrakeSystem
   BrakeSystem -->|"T_b"| Wheels
-  st -->|"\delta"| Ackermann
-  Ackermann -->|"\delta_i,\delta_o"| Wheels
-  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  st -->|"δ"| Ackermann
+  Ackermann -->|"δ_i, δ_o"| Wheels
+  Wheels -->|"κ, α"| Pacejka[Pacejka Tire Model]
   Pacejka -->|"F_x,F_y"| ForceCalc
   Suspension -->|"F_s"| ForceCalc
   HitchModel -->|"F_h"| ForceCalc
@@ -359,7 +359,7 @@ example the engine produces torque $T_e = f(\omega_e) \times \theta_{th}$ which 
 transmission multiplies to
 $T_w = T_c \times \mathrm{gearRatio} \times finalDrive$
 Wheels
-provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
+provide slip ratio `$\kappa$` and angle `\alpha` to the Pacejka tire model to
 compute `F_x` and `F_y`. These forces together with the suspension reaction
 `F_s` are summed by `ForceCalculator` yielding accelerations
 `a_x`, `a_y` and yaw moment `M_z`. `DynamicsUpdater` integrates the resulting
@@ -417,15 +417,15 @@ flowchart TD
   ACC -->|"limited accel"| LongLim
   Inputs -->|"path"| PP[Pure Pursuit]
   PP -->|"steer req"| LatLim
-  LongLim -->|"a_{cmd}"| Jerk
-  LatLim -->|"\delta_{lim}"| Jerk
+  LongLim -->|"a_cmd"| Jerk
+  LatLim -->|"δ_lim"| Jerk
   Jerk -->|"throttle"| Throttle
   Jerk -->|"steer"| Ackermann
-  Throttle -->|"\theta_{th}"| Engine
+  Throttle -->|"θ_th"| Engine
   Engine -->|"T_e"| Transmission
   Transmission -->|"T_w"| Differential
-  Differential -->|"T_{axle}"| Wheels
-  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Differential -->|"T_axle"| Wheels
+  Ackermann -->|"δ_i, δ_o"| Wheels
   Wheels -->|"state"| Feedback[Vehicle State]
   Feedback -->|"speed"| PID
   Feedback -->|"pos"| PP
@@ -437,15 +437,15 @@ dependent curves.  The curves are provided as Excel files so they can be tuned
 without modifying the code.
 
 *Longitudinal limits*
-$a_{cmd} = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)$
+$a_cmd = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)$
 Acceleration and braking bounds $a_{max}(v)$ and $a_{min}(v)$ are read from
 `accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
 through a Gaussian filter and then ramped over several steps to avoid jerks.
 
 *Lateral limits*
-$\delta_{lim} = \mathrm{interp}(v,\, speedData,\, maxAngleData)$
+$δ_lim = \mathrm{interp}(v,\, speedData,\, maxAngleData)$
 `steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
-The limiter clamps the requested angle to $\pm\delta_{lim}$ each update.
+The limiter clamps the requested angle to $\pmδ_lim$ each update.
 
 ### Tests
 MATLAB test functions under `tests/` validate controllers, vehicle dynamics and localization routines. Run `runtests('tests')` inside MATLAB to execute all unit tests.
