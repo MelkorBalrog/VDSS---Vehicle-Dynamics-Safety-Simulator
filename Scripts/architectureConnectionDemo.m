@@ -29,6 +29,11 @@ function architectureConnectionDemo
 
     blockA = drawrectangle(ax, 'Position', [50 120 100 60], 'Color', 'b');
     blockB = drawrectangle(ax, 'Position', [250 80 100 60], 'Color', 'r');
+    action = drawrectangle(ax, 'Position', [150 200 80 40], 'Color', 'g');
+
+    elements = [struct('shape',blockA,'type','block');
+                struct('shape',blockB,'type','block');
+                struct('shape',action,'type','action')];
 
     connectorTypes = {'flow','fork','join','merge'};
     selectedType = 'flow';
@@ -44,7 +49,7 @@ function architectureConnectionDemo
     addlistener(blockB, 'MovingROI', @(s,e)updateConnection());
     addlistener(blockA, 'ROIMoved', @(s,e)validateConnection());
     addlistener(blockB, 'ROIMoved', @(s,e)validateConnection());
-    addlistener(lineObj, 'MovingROI', @(s,e)constrainLine());
+    addlistener(lineObj, 'MovingROI', @(s,e)previewConnection());
     addlistener(lineObj, 'ROIMoved', @(s,e)validateConnection());
 
     function constrainLine()
@@ -52,7 +57,22 @@ function architectureConnectionDemo
         lineObj.Position(2,:) = intersectRect(blockB.Position, lineObj.Position(1,:));
     end
 
-function updateConnection()
+    function previewConnection()
+        constrainLine();
+        p1 = intersectRect(blockA.Position, lineObj.Position(2,:));
+        p2 = intersectRect(blockB.Position, lineObj.Position(1,:));
+        srcType = elementAtPoint(p1);
+        dstType = elementAtPoint(p2);
+        [valid,~] = isValidSysML(srcType, dstType, selectedType, p1, p2);
+        if valid
+            lastValidPos = [p1; p2];
+        else
+            lineObj.Position = lastValidPos;
+        end
+        updateConnectorShape();
+    end
+
+    function updateConnection()
         p1 = intersectRect(blockA.Position, lineObj.Position(2,:));
         p2 = intersectRect(blockB.Position, lineObj.Position(1,:));
         lineObj.Position = [p1; p2];
@@ -67,10 +87,13 @@ function updateConnection()
     function validateConnection()
         p1 = intersectRect(blockA.Position, lineObj.Position(2,:));
         p2 = intersectRect(blockB.Position, lineObj.Position(1,:));
-        if isOnRight(blockA.Position, p1) && isOnLeft(blockB.Position, p2)
+        srcType = elementAtPoint(p1);
+        dstType = elementAtPoint(p2);
+        [valid,msg] = isValidSysML(srcType,dstType,selectedType,p1,p2);
+        if valid
             lastValidPos = [p1; p2];
         else
-            uialert(f, 'Connection must go from block A output to block B input', 'Invalid Connection');
+            uialert(f, msg, 'Invalid Connection');
             lineObj.Position = lastValidPos;
         end
         updateConnectorShape();
@@ -141,6 +164,60 @@ function updateConnection()
     function v = rotVec(vec, ang)
         v = [vec(1)*cos(ang)-vec(2)*sin(ang), vec(1)*sin(ang)+vec(2)*cos(ang)];
     end
+
+    function type = elementAtPoint(p)
+        for k = 1:numel(elements)
+            if isInside(elements(k).shape.Position, p)
+                type = elements(k).type;
+                return;
+            end
+        end
+        type = 'none';
+    end
+
+    function tf = isInside(rect, pt)
+        tf = pt(1) >= rect(1) && pt(1) <= rect(1)+rect(3) && ...
+             pt(2) >= rect(2) && pt(2) <= rect(2)+rect(4);
+    end
+
+    function [valid,msg] = isValidSysML(srcType,dstType,connType,p1,p2)
+        % Only block-to-block connections are permitted in this demo. An
+        % architecture connection must originate from the output side of
+        % block A and terminate at the input side of block B.
+        if ~strcmp(srcType,'block') || ~strcmp(dstType,'block')
+            valid = false;
+            msg = 'Only block to block connections are allowed';
+            return;
+        end
+
+        if ~isOnRight(blockA.Position,p1) || ~isOnLeft(blockB.Position,p2)
+            valid = false;
+            msg = 'Connection must go from block A output to block B input';
+            return;
+        end
+
+        switch connType
+            case 'flow'
+                valid = true;
+                msg = '';
+            case 'fork'
+                % fork represents one to many flow and is valid for block
+                % outputs in this simple demo
+                valid = true;
+                msg = '';
+            case 'join'
+                % join merges concurrent flows; valid orientation required
+                valid = true;
+                msg = '';
+            case 'merge'
+                % merge combines alternative flows
+                valid = true;
+                msg = '';
+            otherwise
+                valid = false;
+                msg = 'Unknown connector type';
+        end
+    end
 end
 
 function c = rectCenter(pos)
@@ -189,3 +266,4 @@ function p = computeRectIntersection(center, target, rectPos)
     x = center(1) + (y - center(2)) / slope;
     p = [x, y];
 end
+
