@@ -91,6 +91,102 @@ inputs and outputs. Their relationships can be sketched as:
 * **HitchModel** – couples tractor and trailer with a spring‑damper torque and
   integrates the articulation angle with Runge–Kutta 4.
 
+##### Interfaces
+Each mechanical block acts as a black box with defined inputs and outputs:
+- **Throttle** – input: pedal command `u_{th}`; output: throttle position
+  `\theta_{th}`.
+- **Engine** – input: `\theta_{th}`; output engine torque `T_e` as above.
+- **Clutch** – input: engagement state, engine and wheel speeds;
+  outputs transmitted torque `T_c`.
+- **Transmission** – input: `T_c` and gear number; output wheel torque
+  `T_w` and updated gear ratio.
+- **BrakeSystem** – input: brake command `u_b`; output braking torque
+  `T_b = u_b \times maxBrakingForce \times brakeEfficiency`.
+- **LeafSpringSuspension** – inputs: spring deflection `\Delta x` and
+  velocity `v`; output suspension force `F_s`.
+- **AckermannGeometry** – input: desired steering angle `\delta`;
+  outputs inner and outer wheel angles calculated via
+  `\tan\delta_{i,o} = L/(R \mp W/2)` where `L` is wheelbase and
+  `W` track width.
+- **Pacejka96TireModel** – inputs: slip angle `\alpha`, slip ratio `\kappa`
+  and normal load `F_z`; outputs lateral and longitudinal forces using the
+  formulas above.
+- **HitchModel** – inputs: tractor and trailer states; outputs hitch forces,
+  moments and articulation angle integrated with RK4.
+
+##### Detailed Block Descriptions
+Each mechanical block can be viewed as a self contained subsystem described by
+inputs, outputs and a short physical model.
+
+###### Throttle
+*Inputs*: driver command `u_{th}`
+*Outputs*: opening angle `\theta_{th}`
+
+The throttle filters the driver command and rate limits the change in opening.
+The actual valve position is `\theta_{th}=\text{saturate}(u_{th})`. When the
+clutch is disengaged the delivered opening becomes
+`\theta_{adj}=\theta_{th}(1-e)` where `e` is the clutch engagement percentage.
+
+###### Engine
+*Inputs*: `\theta_{th}`, load torque `T_{load}`
+*Outputs*: engine torque `T_e`, engine speed `\omega_e`
+
+Represents a diesel engine whose torque curve `T_e = f(\omega_e)` is measured
+from test data. The instantaneous output is
+`T_e = f(\omega_e)\,\theta_{th}` limited by `maxTorque`. Engine speed evolves as
+`\dot{\omega}_e = (T_e - T_{load})/I_e` where `I_e` is engine inertia.
+
+###### Clutch
+*Inputs*: engagement percentage `e`, engine and wheel speeds
+*Outputs*: transmitted torque `T_c`
+
+Torque transfer depends on clutch engagement:
+`T_c = (1-e)\,T_{max}` with `T_{max}` the clutch capacity.
+
+###### Transmission
+*Inputs*: `T_c`, selected gear `g`
+*Outputs*: wheel torque `T_w`
+
+Wheel torque is amplified by the gear and final drive:
+`T_w = T_c\,\text{gearRatio}(g)\,finalDrive`.
+
+###### BrakeSystem
+*Inputs*: brake command `u_b`
+*Outputs*: braking force `F_{brake}`
+
+Pedal command is converted to a total braking force via
+`F_{brake}=u_b\,maxBrakingForce\,brakeEfficiency` which is then split between the
+axles using the brake bias.
+
+###### LeafSpringSuspension
+*Inputs*: spring deflection `\Delta x`, velocity `v`
+*Outputs*: suspension force `F_s`
+
+Suspension forces use a spring damper relation
+`F_s=-K\,\Delta x-C\,v` and include load transfer from lateral/longitudinal
+acceleration.
+
+###### AckermannGeometry
+*Input*: desired steering angle `\delta`
+*Outputs*: inner/outer wheel angles `\delta_i`,`\delta_o`
+
+The geometry obeys
+`\tan\delta_{i,o}=L/(R\mp W/2)` where `L` is wheelbase and `W` track width.
+
+###### Pacejka96TireModel and PacejkaMagicFormula
+*Inputs*: slip angle `\alpha`, slip ratio `\kappa`, normal load `F_z`
+*Outputs*: tire forces `F_x`,`F_y`
+
+Both tire models implement the Pacejka equations to provide longitudinal and
+lateral grip based on `\alpha` and `\kappa`.
+
+###### HitchModel
+*Inputs*: tractor/trailer states
+*Outputs*: hitch forces and articulation angle
+
+The hitch applies a spring\–damper moment `M_h=k_h\,\delta+c_h\,\dot\delta`. The
+angle `\delta` is integrated with RK4 together with trailer yaw rate.
+
 ### Control
 Adaptive cruise (`acc_Controller`), PID and jerk controllers, lateral/longitudinal limiters and the `purePursuit_PathFollower` are implemented here. Controllers output throttle, brake and steering commands each cycle.
 
@@ -179,6 +275,9 @@ dynamics. Key formulas include:
 - Rotation matrix from body to world given roll `\phi`, pitch `\theta` and yaw
   `\psi`:
   `R = R_z(\psi) R_y(\theta) R_x(\phi)`.
+- Body velocities to world-frame position rates:
+  `\dot x = u \cos\psi - v \sin\psi`,
+  `\dot y = u \sin\psi + v \cos\psi`.
 - Lateral acceleration update:
   `a_{lat} = F_y / m`
 - Roll dynamics internal to `KinematicsCalculator`:
@@ -199,6 +298,9 @@ dynamics. Key formulas include:
   `\alpha = \tan^{-1}(v_y / |v_x|)`
 - Aerodynamic drag:
   `F_d = 0.5\,\rho\,C_d\,A\,v^2`
+- Newton's second law couples the forces and accelerations as
+  `m\,a = \sum F` and `I\,\alpha = \sum M` for translational and rotational
+  dynamics.
 
 ### Integration
 Vehicle states are propagated using a classical fourth‑order Runge–Kutta (RK4)
@@ -212,6 +314,14 @@ y_{n+1} = y_n + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 ```
 This integration is applied to both translational and rotational equations of
 motion every simulation step.
+`ForceCalculator` first determines the net force and moment acting on the
+vehicle from tire grip, braking torque, aerodynamic drag, suspension reaction
+and hitch constraints. `DynamicsUpdater.stateDerivative` converts these forces
+into linear and angular accelerations:
+`a_x=F_x/m`, `a_y=F_y/m` and `\dot r=M_z/I_z`. `KinematicsCalculator`
+then maps body velocities to world-frame position rates. The RK4 loop integrates
+these derivatives so that position, velocity, orientation and roll state are
+all updated consistently each time step.
 
 ## Signal Filtering
 - **Moving average filters** smooth transmission shift logic and force outputs in `Transmission` and `ForceCalculator` (window sizes configurable).
