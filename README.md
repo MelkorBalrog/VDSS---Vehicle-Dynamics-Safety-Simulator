@@ -76,7 +76,8 @@ inputs and outputs. Their relationships can be visualized using Mermaid:
 ```mermaid
 flowchart LR
   Throttle -->|"\theta_{th}"| Engine
-  Engine -->|"T_e"| Clutch
+  Engine -->|"T_e,\omega_e"| Clutch
+  Wheels -->|"\omega_w"| Clutch
   Clutch -->|"T_c"| Transmission
   Transmission -->|"T_w"| Differential
   Differential -->|"T_{axle}"| Wheels
@@ -134,8 +135,10 @@ Each mechanical block can be viewed as a self contained subsystem described by
 inputs, outputs and a short physical model.
 
 ###### Throttle
-```
-u_{th} --> [Throttle] --> \theta_{th}
+```mermaid
+flowchart LR
+  u_th(["u_{th}"]) --> Throttle[Throttle]
+  Throttle --> theta_th(["\theta_{th}"])
 ```
 *Inputs*: driver command `u_{th}`
 *Outputs*: opening angle `\theta_{th}`
@@ -146,8 +149,14 @@ clutch is disengaged the delivered opening becomes
 `\theta_{adj}=\theta_{th}(1-e)` where `e` is the clutch engagement percentage.
 
 ###### Engine
-```
-(\theta_{th}, T_{load}) --> [Engine] --> (T_e, \omega_e)
+```mermaid
+flowchart LR
+  theta_th(["\theta_{th}"])
+  load_torque(["T_{load}"])
+  theta_th --> Engine
+  load_torque --> Engine
+  Engine --> T_e(["T_e"])
+  Engine --> omega_e(["\omega_e"])
 ```
 *Inputs*: `\theta_{th}`, load torque `T_{load}`
 *Outputs*: engine torque `T_e`, engine speed `\omega_e`
@@ -158,8 +167,15 @@ from test data. The instantaneous output is
 `\dot{\omega}_e = (T_e - T_{load})/I_e` where `I_e` is engine inertia.
 
 ###### Clutch
-```
-(e, \omega_e, \omega_w) --> [Clutch] --> T_c
+```mermaid
+flowchart LR
+  engage(["e"])
+  omega_e(["\omega_e"])
+  omega_w(["\omega_w"])
+  engage --> Clutch
+  omega_e --> Clutch
+  omega_w --> Clutch
+  Clutch --> T_c(["T_c"])
 ```
 *Inputs*: engagement percentage `e`, engine and wheel speeds
 *Outputs*: transmitted torque `T_c`
@@ -168,8 +184,13 @@ Torque transfer depends on clutch engagement:
 `T_c = (1-e)\,T_{max}` with `T_{max}` the clutch capacity.
 
 ###### Transmission
-```
-(T_c, gear) --> [Transmission] --> T_w
+```mermaid
+flowchart LR
+  T_c(["T_c"])
+  gear(["gear"])
+  T_c --> Transmission
+  gear --> Transmission
+  Transmission --> T_w(["T_w"])
 ```
 *Inputs*: `T_c`, selected gear `g`
 *Outputs*: wheel torque `T_w`
@@ -178,8 +199,11 @@ Wheel torque is amplified by the gear and final drive:
 `T_w = T_c\,\text{gearRatio}(g)\,finalDrive`.
 
 ###### BrakeSystem
-```
-u_b --> [BrakeSystem] --> F_{brake}
+```mermaid
+flowchart LR
+  u_b(["u_b"])
+  u_b --> BrakeSystem
+  BrakeSystem --> F_brake(["F_{brake}"])
 ```
 *Inputs*: brake command `u_b`
 *Outputs*: braking force `F_{brake}`
@@ -189,8 +213,13 @@ Pedal command is converted to a total braking force via
 axles using the brake bias.
 
 ###### LeafSpringSuspension
-```
-(\Delta x, v) --> [LeafSpringSuspension] --> F_s
+```mermaid
+flowchart LR
+  dx(["\Delta x"])
+  vel(["v"])
+  dx --> Suspension
+  vel --> Suspension
+  Suspension --> F_s(["F_s"])
 ```
 *Inputs*: spring deflection `\Delta x`, velocity `v`
 *Outputs*: suspension force `F_s`
@@ -200,8 +229,12 @@ Suspension forces use a spring damper relation
 acceleration.
 
 ###### AckermannGeometry
-```
-\delta --> [AckermannGeometry] --> (\delta_i, \delta_o)
+```mermaid
+flowchart LR
+  delta(["\delta"])
+  delta --> Ackermann
+  Ackermann --> delta_i(["\delta_i"])
+  Ackermann --> delta_o(["\delta_o"])
 ```
 *Input*: desired steering angle `\delta`
 *Outputs*: inner/outer wheel angles `\delta_i`,`\delta_o`
@@ -210,8 +243,16 @@ The geometry obeys
 `\tan\delta_{i,o}=L/(R\mp W/2)` where `L` is wheelbase and `W` track width.
 
 ###### Pacejka96TireModel and PacejkaMagicFormula
-```
-(\alpha, \kappa, F_z) --> [Pacejka96TireModel] --> (F_x, F_y)
+```mermaid
+flowchart LR
+  alpha(["\alpha"])
+  kappa(["\kappa"])
+  Fz(["F_z"])
+  alpha --> Tire
+  kappa --> Tire
+  Fz --> Tire
+  Tire --> F_x(["F_x"])
+  Tire --> F_y(["F_y"])
 ```
 *Inputs*: slip angle `\alpha`, slip ratio `\kappa`, normal load `F_z`
 *Outputs*: tire forces `F_x`,`F_y`
@@ -220,8 +261,12 @@ Both tire models implement the Pacejka equations to provide longitudinal and
 lateral grip based on `\alpha` and `\kappa`.
 
 ###### HitchModel
-```
-states --> [HitchModel] --> (F_h, \delta)
+```mermaid
+flowchart LR
+  states(["states"])
+  states --> Hitch
+  Hitch --> F_h(["F_h"])
+  Hitch --> delta(["\delta"])
 ```
 *Inputs*: tractor/trailer states
 *Outputs*: hitch forces and articulation angle
@@ -242,7 +287,8 @@ flowchart LR
   end
   th -->|"u_{th}"| Throttle
   Throttle -->|"\theta_{th}"| Engine
-  Engine -->|"T_e"| Clutch
+  Engine -->|"T_e,\omega_e"| Clutch
+  Wheels -->|"\omega_w"| Clutch
   Clutch -->|"T_c"| Transmission
   Transmission -->|"T_w"| Differential
   Differential -->|"T_{axle}"| Wheels
@@ -255,6 +301,8 @@ flowchart LR
   Suspension -->|"F_s"| ForceCalc
   ForceCalc -->|"a_x,a_y,M_z"| Dynamics
   Dynamics -->|"RK4"| Motion[Vehicle State]
+  Motion -->|"u,v,r"| ForceCalc
+  Motion -->|"v_x,v_y"| Wheels
 ```
 
 The labels show the key state variables exchanged between the blocks. For
