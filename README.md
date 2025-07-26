@@ -72,15 +72,22 @@ where `B`, `C`, `D` and `E` are stiffness parameters.
 
 #### Mechanical Model Blocks
 The main mechanical components behave like interconnected black boxes with clear
-inputs and outputs. Their relationships can be sketched as:
-```
-[Throttle]
-   |
-   v
-[Engine] --T_e--> [Clutch] --T_c--> [Transmission] --T_w--> [Tires]
-                                                  |
-                                                  v
-                                             [BrakeSystem]
+inputs and outputs. Their relationships can be visualized using Mermaid:
+```mermaid
+flowchart LR
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e"| Clutch
+  Clutch -->|"T_c"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  BrakeSystem -->|"T_b"| Wheels
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Pacejka -->|"F_x,F_y"| Chassis
+  Suspension -->|"F_s"| Chassis
+  Chassis -->|"u,v,r"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"RK4"| Motion
 ```
 * **Engine** – accepts throttle position and produces engine torque
   `T_e = torqueCurve(RPM) \times u_{throttle}` limited by `maxTorque`.
@@ -227,27 +234,37 @@ The following diagram summarizes how driver inputs propagate through the
 mechanical subsystems to produce vehicle motion.
 
 ```mermaid
-graph LR
+flowchart LR
   subgraph Driver Inputs
     th[Throttle Cmd]
     br[Brake Cmd]
     st[Steering Cmd]
   end
-  th --> Throttle
-  Throttle --> Engine
-  Engine --> Clutch
-  Clutch --> Transmission
-  Transmission --> Differential
-  Differential --> Wheels
-  br --> BrakeSystem
-  BrakeSystem --> Wheels
-  st --> Ackermann
-  Ackermann --> Wheels
-  Wheels -->|Forces| Chassis
-  Suspension --> Chassis
-  Chassis --> Dynamics
-  Dynamics --> Motion[Vehicle Motion]
+  th -->|"u_{th}"| Throttle
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e"| Clutch
+  Clutch -->|"T_c"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  br -->|"u_b"| BrakeSystem
+  BrakeSystem -->|"T_b"| Wheels
+  st -->|"\delta"| Ackermann
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Pacejka -->|"F_x,F_y"| ForceCalc
+  Suspension -->|"F_s"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"RK4"| Motion[Vehicle State]
 ```
+
+The labels show the key state variables exchanged between the blocks. For
+example the engine produces torque `T_e = f(\omega_e)\,\theta_{th}` which the
+transmission multiplies to `T_w = T_c\,\text{gearRatio}\,finalDrive`. Wheels
+provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
+compute `F_x` and `F_y`. These forces together with the suspension reaction
+`F_s` are summed by `ForceCalculator` yielding accelerations
+`a_x`, `a_y` and yaw moment `M_z`. `DynamicsUpdater` integrates the resulting
+rates with a Runge\--Kutta 4 step.
 
 Each block corresponds to the components described above. Driver commands enter
 on the left and the integrated vehicle state emerges on the right after the
