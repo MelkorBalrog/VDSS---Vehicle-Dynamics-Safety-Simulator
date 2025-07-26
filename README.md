@@ -741,6 +741,25 @@ these derivatives so that position, velocity, orientation and roll state are
 all updated consistently each time step.
 The dynamic equations determine the accelerations from forces, while the kinematic relations map these accelerations to changes in position and orientation. The RK4 integrator couples them so that forces acting on the vehicle directly influence its motion each timestep.
 
+## Derivatives, Integrals and the Levant Formula
+The simulator repeatedly differentiates and integrates signals to turn driver
+commands into motion.  Speed control uses a PID loop where
+```
+accel = Kp * error + Ki * \int error \, dt + Kd * \frac{d(error)}{dt}
+```
+The derivative term is obtained with the **Levant differentiator**, a robust
+sliding-mode algorithm implemented in `LevantDifferentiator`. It estimates
+`d(error)/dt` even when the measured speed is noisy. The integral term collects
+the sum of past errors to eliminate steady offsets.
+
+`ForceCalculator` converts throttle, brake and steering commands into forces
+using the tire slip formulas and aerodynamics listed above. These forces yield
+accelerations through Newton's laws. `DynamicsUpdater.updateStateRK4` then
+integrates the accelerations over the timestep `dt` so that velocity and
+position advance smoothly. This continuous cycle of differentiating the command
+error, computing forces and integrating the resulting accelerations is what
+translates user inputs into vehicle motion.
+
 ## Signal Filtering
 The simulator applies several filters to commands and forces so that abrupt
 changes do not destabilize the dynamics. The sequence for each signal is shown
