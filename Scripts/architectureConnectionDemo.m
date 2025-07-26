@@ -40,6 +40,11 @@ function architectureConnectionDemo
     typeDrop = uidropdown(f, 'Items', connectorTypes, 'Value', selectedType,
         'Position', [10 260 80 22], 'ValueChangedFcn', @(dd,ev)changeType(dd.Value));
 
+    connectorTypes = {'flow','fork','join','merge'};
+    selectedType = 'flow';
+    typeDrop = uidropdown(f, 'Items', connectorTypes, 'Value', selectedType,
+        'Position', [10 260 80 22], 'ValueChangedFcn', @(dd,ev)changeType(dd.Value));
+
     lineObj = drawline(ax, 'Position', [rectCenter(blockA.Position); rectCenter(blockB.Position)]);
     shapeObj = gobjects(0);
     lastValidPos = lineObj.Position;
