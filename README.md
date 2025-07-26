@@ -62,6 +62,35 @@ F_y = D \sin(C \tan^{-1}(B\alpha - E(B\alpha - \tan^{-1}(B\alpha))))
 ```
 where `B`, `C`, `D` and `E` are stiffness parameters.
 
+#### Mechanical Model Blocks
+The main mechanical components behave like interconnected black boxes with clear
+inputs and outputs. Their relationships can be sketched as:
+```
+[Throttle]
+   |
+   v
+[Engine] --T_e--> [Clutch] --T_c--> [Transmission] --T_w--> [Tires]
+                                                  |
+                                                  v
+                                             [BrakeSystem]
+```
+* **Engine** – accepts throttle position and produces engine torque
+  `T_e = torqueCurve(RPM) \times u_{throttle}` limited by `maxTorque`.
+* **Clutch** – transmits torque when engaged using
+  `T_c = K_{clutch}(\omega_e - \omega_w)`.
+* **Transmission** – multiplies clutch torque by the selected gear ratio and
+  final drive: `T_w = T_c \times gearRatio \times finalDriveRatio`.
+* **BrakeSystem** – converts brake pedal command to braking torque applied to
+  the wheels.
+* **LeafSpringSuspension** – generates suspension force
+  `F_s = -K \Delta x - C v` from spring displacement and velocity.
+* **AckermannGeometry** – maps steering wheel angle to left and right wheel
+  angles for proper turning radii.
+* **Pacejka96TireModel** – computes tire forces using the Pacejka formulas
+  shown above for lateral and longitudinal grip.
+* **HitchModel** – couples tractor and trailer with a spring‑damper torque and
+  integrates the articulation angle with Runge–Kutta 4.
+
 ### Control
 Adaptive cruise (`acc_Controller`), PID and jerk controllers, lateral/longitudinal limiters and the `purePursuit_PathFollower` are implemented here. Controllers output throttle, brake and steering commands each cycle.
 
@@ -137,6 +166,52 @@ The simulator models vehicle dynamics with:
 - **KinematicsCalculator** for coordinate transforms and velocity derivatives.
 - **ForceCalculator** which sums traction, braking, aerodynamic and suspension forces before updating the dynamics.
 - **Energy balance** for collision analysis: `E_k = 0.5 * m * v^2`.
+
+## Physics
+The simulator's physics engine combines kinematic relationships with rigid-body
+dynamics. Key formulas include:
+
+### Kinematics
+- Distance under constant acceleration:
+  `s = v_0 t + 0.5 a t^2`
+- Final velocity:
+  `v = v_0 + a t`
+- Rotation matrix from body to world given roll `\phi`, pitch `\theta` and yaw
+  `\psi`:
+  `R = R_z(\psi) R_y(\theta) R_x(\phi)`.
+- Lateral acceleration update:
+  `a_{lat} = F_y / m`
+- Roll dynamics internal to `KinematicsCalculator`:
+  `rollAccel = (M_{roll} - D_{roll} \, rollRate - K_{roll} \, rollAngle) / I_{roll}`
+
+### Dynamics
+- Longitudinal motion:
+  `\frac{du}{dt} = F_x/m + r v`
+- Lateral motion:
+  `\frac{dv}{dt} = F_y/m - r u`
+- Yaw rate derivative:
+  `\dot r = M_z / I_z`
+- Roll rate derivative:
+  `\dot p = (momentRoll - m g h \sin\phi - K_{roll}\phi - C_{roll} p) / I_{xx}`
+- Tire slip ratio:
+  `\kappa = (\omega R - v_x)/\max(v_x,0.1)`
+- Tire slip angle:
+  `\alpha = \tan^{-1}(v_y / |v_x|)`
+- Aerodynamic drag:
+  `F_d = 0.5\,\rho\,C_d\,A\,v^2`
+
+### Integration
+Vehicle states are propagated using a classical fourth‑order Runge–Kutta (RK4)
+scheme implemented in `DynamicsUpdater.updateStateRK4` and `HitchModel`:
+```
+k1 = f(y)
+k2 = f(y + dt/2 * k1)
+k3 = f(y + dt/2 * k2)
+k4 = f(y + dt * k3)
+y_{n+1} = y_n + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+```
+This integration is applied to both translational and rotational equations of
+motion every simulation step.
 
 ## Signal Filtering
 - **Moving average filters** smooth transmission shift logic and force outputs in `Transmission` and `ForceCalculator` (window sizes configurable).
