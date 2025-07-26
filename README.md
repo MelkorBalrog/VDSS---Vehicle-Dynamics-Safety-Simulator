@@ -416,15 +416,54 @@ flowchart LR
 * **ACC Controller** modifies the PID output when approaching a curve.  When the
   distance to a curve is below \(v \times t_{lookahead}\) the commanded speed is
   reduced by a factor and jerk is limited to \(0.7 g\).
-* **Pure Pursuit Path Follower** predicts waypoints ahead of the vehicle and
-  computes the steering angle \(\delta = \tan^{-1}\frac{2L\sin\alpha}{d}\).  The
-  angle passes through a Gaussian and low\-pass filter to reduce oscillations.
+* **Pure Pursuit Path Follower** predicts a lookahead pose using
+  \(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
+  \(\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]\). It searches the
+  path ahead for a target point, computes
+  \(\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}\)
+  and outputs
+  \(\delta_{pp} = \mathrm{atan2}(2L \sin\alpha, d_l)\). `planPathWithPredictions`
+  refines the trajectory and the result passes through Gaussian and low\-pass
+  filters to remove zig\-zag oscillations.
 * **Longitudinal Limiter** reads calibration curves from Excel to cap allowable
   acceleration and braking as functions of speed.
 * **Lateral Limiter** loads a steering limit curve from a file and clamps the
   requested wheel angle at high speed.
 * **Jerk Controller** bounds the change of acceleration and steering rate using
   \(\Delta u_{max} = J_{max} \Delta t\).
+
+#### Pure Pursuit Logic
+
+This implementation extends classic Pure Pursuit. The follower first predicts
+vehicle motion a short time ahead and then selects a lookahead point on the
+planned path. Using this prediction allows `planPathWithPredictions` to refine
+the trajectory and suppress oscillations before filtering. Interfaces between
+each step are explicit so later stages can apply limits and smoothing.
+
+```mermaid
+flowchart TD
+  S["Vehicle state<br/>p, v, θ, δ"] -->|"θ̂ = θ + (v/L) tan(δ) tₚ"| Ptheta["Heading prediction"]
+  S -->|"p̂ = p + v tₚ[cos θ̂, sin θ̂]"| Ppos["Position prediction"]
+  Ptheta --> Look["Lookahead search"]
+  Ppos --> Look
+  Look -->|"α = atan2(y_l - p̂_y, x_l - p̂_x) - θ̂"| Err["Heading error"]
+  Err -->|"δ_pp = atan2(2L sin α, d_l)"| PP["Pure Pursuit"]
+  PP --> Plan["planPathWithPredictions"]
+  Plan --> ZigZag["Zig-zag correction"]
+  ZigZag --> Filt["Gaussian & low-pass"]
+  Filt --> Gear["Gear shift rules"]
+  Gear --> Cmd["Steering command δ_cmd"]
+```
+
+Here
+\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
+\(\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]\) represent the
+predicted heading and position after time \(t_p\). From the predicted position
+the controller computes
+\(\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}\)
+and distance \(d_l\) to the target waypoint. `planPathWithPredictions` then
+adjusts the reference path to eliminate zig\-zag oscillations before the
+Gaussian and low-pass filters and the gear-shift logic are applied.
 
 These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
