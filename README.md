@@ -72,15 +72,22 @@ where `B`, `C`, `D` and `E` are stiffness parameters.
 
 #### Mechanical Model Blocks
 The main mechanical components behave like interconnected black boxes with clear
-inputs and outputs. Their relationships can be sketched as:
-```
-[Throttle]
-   |
-   v
-[Engine] --T_e--> [Clutch] --T_c--> [Transmission] --T_w--> [Tires]
-                                                  |
-                                                  v
-                                             [BrakeSystem]
+inputs and outputs. Their relationships can be visualized using Mermaid:
+```mermaid
+flowchart LR
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e"| Clutch
+  Clutch -->|"T_c"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  BrakeSystem -->|"T_b"| Wheels
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Pacejka -->|"F_x,F_y"| Chassis
+  Suspension -->|"F_s"| Chassis
+  Chassis -->|"u,v,r"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"RK4"| Motion
 ```
 * **Engine** – accepts throttle position and produces engine torque
   `T_e = torqueCurve(RPM) \times u_{throttle}` limited by `maxTorque`.
@@ -222,6 +229,47 @@ states --> [HitchModel] --> (F_h, \delta)
 The hitch applies a spring\–damper moment `M_h=k_h\,\delta+c_h\,\dot\delta`. The
 angle `\delta` is integrated with RK4 together with trailer yaw rate.
 
+## Vehicle Modeling Flow
+The following diagram summarizes how driver inputs propagate through the
+mechanical subsystems to produce vehicle motion.
+
+```mermaid
+flowchart LR
+  subgraph Driver Inputs
+    th[Throttle Cmd]
+    br[Brake Cmd]
+    st[Steering Cmd]
+  end
+  th -->|"u_{th}"| Throttle
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e"| Clutch
+  Clutch -->|"T_c"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  br -->|"u_b"| BrakeSystem
+  BrakeSystem -->|"T_b"| Wheels
+  st -->|"\delta"| Ackermann
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Pacejka -->|"F_x,F_y"| ForceCalc
+  Suspension -->|"F_s"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"RK4"| Motion[Vehicle State]
+```
+
+The labels show the key state variables exchanged between the blocks. For
+example the engine produces torque `T_e = f(\omega_e)\,\theta_{th}` which the
+transmission multiplies to `T_w = T_c\,\text{gearRatio}\,finalDrive`. Wheels
+provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
+compute `F_x` and `F_y`. These forces together with the suspension reaction
+`F_s` are summed by `ForceCalculator` yielding accelerations
+`a_x`, `a_y` and yaw moment `M_z`. `DynamicsUpdater` integrates the resulting
+rates with a Runge\--Kutta 4 step.
+
+Each block corresponds to the components described above. Driver commands enter
+on the left and the integrated vehicle state emerges on the right after the
+dynamics calculations.
+
 ### Control
 Adaptive cruise (`acc_Controller`), PID and jerk controllers, lateral/longitudinal limiters and the `purePursuit_PathFollower` are implemented here. Controllers output throttle, brake and steering commands each cycle.
 
@@ -291,12 +339,44 @@ thresholds = baseDV * scale;  % baseDV from J2980 table
 Collision energy is computed as `0.5 * m * \Delta v^2` and compared with severity thresholds. This extension allows comparing truck crashes against J2980 passenger‑car limits by specifying `J2980AssumedMaxMass` in the GUI.
 
 ## Physics Models
-The simulator models vehicle dynamics with:
-- **Pacejka '96 tire model** (`Pacejka96TireModel`) for lateral and longitudinal forces. Flat tires modify the Pacejka parameters to reduce stiffness and peak grip.
-- **Runge–Kutta 4 integrator** (`DynamicsUpdater.updateStateRK4`) for state propagation each time step.
-- **KinematicsCalculator** for coordinate transforms and velocity derivatives.
-- **ForceCalculator** which sums traction, braking, aerodynamic and suspension forces before updating the dynamics.
-- **Energy balance** for collision analysis: `E_k = 0.5 * m * v^2`.
+The blocks above are tied together using classical vehicle dynamics. The process
+for each simulation step is summarized below.
+
+1. **Slip and Tire Forces**
+   - Slip ratio: `\kappa = (\omega R - v_x)/\max(v_x,0.1)`
+   - Slip angle: `\alpha = \tan^{-1}(v_y / |v_x|)`
+   - Pacejka '96 formula gives the tire forces:
+     `F_x = D_x \sin(C_x \tan^{-1}(B_x \kappa - E_x(B_x \kappa - \tan^{-1}(B_x \kappa))))`
+     `F_y = D_y \sin(C_y \tan^{-1}(B_y \alpha - E_y(B_y \alpha - \tan^{-1}(B_y \alpha))))`
+
+2. **Force Summation**
+   - Aerodynamic drag: `F_d = 0.5\,\rho\,C_d\,A\,v^2`
+   - Wheel force: `F_x = T_w/R_w - F_{brake} - F_d`
+   - Net lateral force combines tire and suspension reactions.
+   - Yaw moment: `M_z = l_f F_{yf} - l_r F_{yr}`
+
+3. **Dynamics Update**
+   - Longitudinal: `\frac{du}{dt} = F_x/m + r v`
+   - Lateral: `\frac{dv}{dt} = F_y/m - r u`
+   - Yaw: `\dot r = M_z / I_z`
+   - `KinematicsCalculator` maps body velocities to global rates.
+
+4. **RK4 Integration**
+   Accelerations are integrated with `DynamicsUpdater.updateStateRK4`:
+   ```
+   k1 = f(y)
+   k2 = f(y + dt/2 * k1)
+   k3 = f(y + dt/2 * k2)
+   k4 = f(y + dt * k3)
+   y_{n+1} = y_n + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+   ```
+
+5. **Energy Balance**
+   Collision analysis uses `E_k = 0.5 \, m \, v^2` to compare against severity
+   thresholds.
+
+This chain transforms driver inputs into forces and accelerations that are
+integrated to update position, orientation and velocity every time step.
 
 ## Physics
 The simulator's physics engine combines kinematic relationships with rigid-body
