@@ -195,7 +195,13 @@ function architectureConnectionDemo
     function [valid,msg] = isValidSysML(srcType,dstType,connType,p1,p2)
         % Basic set of SysML 2.0 rules for demo purposes
         if strcmp(srcType,'final')
-            valid = false; msg = 'Final nodes have no outgoing flows'; return;
+            if strcmp(dstType,'initial')
+                msg = 'Cannot connect Final node to Initial node';
+            else
+                msg = 'Final nodes have no outgoing flows';
+            end
+            valid = false;
+            return;
         end
         if strcmp(dstType,'initial')
             valid = false; msg = 'Initial nodes have no incoming flows'; return;
