@@ -170,7 +170,7 @@ flowchart LR
 Represents a diesel engine whose torque curve $T_e = f(\omega_e)$ is measured
 from test data. The instantaneous output is
 $T_e = f(\omega_e) \times \theta_{th}$ limited by `maxTorque`. Engine speed evolves as
-$\dot{\omega}_e = (T_e - T_{load})/I_e$ where `I_e` is engine inertia.
+$\dot{\omega}_e = \tfrac{T_e - T_{load}}{I_e}$ where `I_e` is engine inertia.
 
 ###### Clutch
 ```mermaid
@@ -429,6 +429,29 @@ flowchart TD
   Wheels -->|"state"| Feedback[Vehicle State]
   Feedback -->|"speed"| PID
   Feedback -->|"pos"| PP
+```
+
+#### Pure Pursuit Algorithm
+The path follower selects a lookahead point ahead of the vehicle to compute the
+target steering angle.  The classical pure pursuit method uses a single point at
+distance $d$ and applies
+
+$$
+\delta = \tan^{-1}\frac{2L \sin \alpha}{d}
+$$
+
+where $L$ is the wheelbase and $\alpha$ the heading error.  VDSS extends this by
+projecting several future waypoints, averaging the resulting curvatures and then
+filtering the command with Gaussian and low-pass stages before actuating the
+Ackermann steering.
+
+```mermaid
+flowchart LR
+  path[Planned Path] --> Lookahead
+  Lookahead -->|"\alpha,d"| Curv[Compute Curvature]
+  Curv --> Gauss[Gaussian]
+  Gauss --> LowPass[Low-pass]
+  LowPass -->|"\delta"| Ackermann
 ```
 
 #### Control Limiters
