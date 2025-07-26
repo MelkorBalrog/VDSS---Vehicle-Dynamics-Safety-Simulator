@@ -237,3 +237,4 @@ end
 function c = rectCenter(pos)
     c = [pos(1) + pos(3)/2, pos(2) + pos(4)/2];
 end
+
