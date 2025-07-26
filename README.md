@@ -400,19 +400,24 @@ highlight how commands and feedback loop through the system.
 
 ```mermaid
 flowchart TD
-  Inputs[Driver Inputs] --> PID
-  PID --> ACC --> LongLim
-  Inputs --> PP[Pure Pursuit]
-  PP --> LatLim
-  LongLim --> Jerk
-  LatLim --> Jerk
-  Jerk --> Throttle
-  Jerk --> Ackermann
-  Throttle --> Engine --> Transmission --> Differential --> Wheels
-  Ackermann --> Wheels
-  Wheels --> Feedback[Vehicle State]
-  Feedback --> PID
-  Feedback --> PP
+  Inputs[Driver Inputs]
+  Inputs -->|"speed setpoint"| PID
+  PID -->|"accel cmd"| ACC
+  ACC -->|"limited accel"| LongLim
+  Inputs -->|"path"| PP[Pure Pursuit]
+  PP -->|"steer req"| LatLim
+  LongLim -->|"a_{cmd}"| Jerk
+  LatLim -->|"\delta_{lim}"| Jerk
+  Jerk -->|"throttle"| Throttle
+  Jerk -->|"steer"| Ackermann
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"state"| Feedback[Vehicle State]
+  Feedback -->|"speed"| PID
+  Feedback -->|"pos"| PP
 ```
 
 #### Control Limiters
@@ -550,6 +555,42 @@ Key tabs include:
 
 Changing any of these fields immediately updates the parameters used in the next
 simulation step, enabling rapid calibration of the entire vehicle model.
+
+### Modeling Your Vehicle
+The GUI allows assembling custom vehicles by filling out the fields above. Two
+presets are included:
+
+1. **Passenger Vehicle** – a car without a trailer. This profile uses
+   moderate masses and a short wheelbase.
+2. **Class 8 Truck + Trailer** – heavy tractor with one box trailer attached.
+   Selecting this preset fills in large masses, multiple axles and long gear
+   ratios.
+
+To build your own vehicle:
+
+1. Start VDSS and open the **Basic Configuration** tab.
+2. Pick either preset as a starting point or enter your own masses and geometry.
+3. Load engine torque and limiter curves from the provided Excel files.
+4. Adjust controller gains in the **PID Controller** tab.
+5. Specify lookahead distance and waypoints under **Path Follower**.
+6. Save the resulting parameter set for future runs.
+
+The diagram below illustrates how each group of GUI fields links to the
+mechanical and control blocks:
+
+```mermaid
+flowchart LR
+  Basic --> VehicleModel
+  Geometry --> VehicleModel
+  Tire --> Wheels
+  Suspension --> SuspensionBlock[LeafSpring]
+  EngineParams --> Engine
+  TransmissionParams --> Transmission
+  BrakeParams --> BrakeSystem
+  Control --> Controllers
+  Aerodynamics --> ForceCalc
+  Road --> SurfaceFrictionManager
+```
 
 ## Capabilities
 - Simulate two vehicles with optional trailers in parallel.
@@ -750,14 +791,23 @@ more stable simulations.
 The mathematical form of each filter is:
 
 - **Rate limiter**
-  \[ y_k = \min(\max(x_k, y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t) \]
+  ```math
+  y_k = \min\bigl( \max(x_k,\,y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t \bigr)
+  ```
   with rate limit \(r_{\max}\).
 - **Gaussian filter**
-  \[ y_k = \sum_{i=-n}^{n} w_i x_{k-i} \] where \(w_i\) are normalised Gaussian weights.
+  ```math
+  y_k = \sum_{i=-n}^{n} w_i x_{k-i}
+  ```
+  where \(w_i\) are normalised Gaussian weights.
 - **Moving average**
-  \[ y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i} \]
+  ```math
+  y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i}
+  ```
 - **Low-pass filter**
-  \[ y_k = \alpha x_k + (1-\alpha) y_{k-1} \]
+  ```math
+  y_k = \alpha x_k + (1-\alpha) y_{k-1}
+  ```
 
 Tuning parameters like \(r_{\max}\), window size \(N\) and coefficient \(\alpha\)
 are exposed in the GUI tabs so users can calibrate how aggressively commands are
