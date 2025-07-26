@@ -449,6 +449,35 @@ Prediction uses
 `planPathWithPredictions` adjusts the trajectory and removes zig-zag oscillations
 before the final filters and gear shift rules.
 
+#### Pure Pursuit Logic
+
+The path follower predicts vehicle motion a short time ahead, chooses a lookahead
+target and refines the trajectory to suppress oscillations. Interfaces between
+each step are explicit so later stages can apply limits and smoothing.
+
+```mermaid
+flowchart TD
+  S["Vehicle state<br/>p, v, \u03b8, \u03b4"] -->|"\u03b8\u0302 = \u03b8 + (v/L)\tan\u03b4\,t_p"| Ptheta["Heading prediction"]
+  S -->|"p\u0302 = p + v\,t_p[\cos\u03b8\u0302,\sin\u03b8\u0302]"| Ppos["Position prediction"]
+  Ptheta --> Look["Lookahead search"]
+  Ppos --> Look
+  Look -->|"\u03b1 = \mathrm{atan2}(y_l - p\u0302_y,\, x_l - p\u0302_x) - \u03b8\u0302"| Err["Heading error"]
+  Err -->|"\u03b4_{pp} = \mathrm{atan2}(2L\sin\u03b1,\, d_l)"| PP["Pure Pursuit"]
+  PP --> Plan["planPathWithPredictions"]
+  Plan --> ZigZag["Zig-zag correction"]
+  ZigZag --> Filt["Gaussian & low-pass"]
+  Filt --> Gear["Gear shift rules"]
+  Gear --> Cmd["Steering command \u03b4_{cmd}"]
+```
+
+Here
+\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
+\(\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]\). The angle
+\(\alpha\) measures the heading from the predicted position to the lookahead
+point, while \(d_l\) is the distance to that point. `planPathWithPredictions`
+uses these estimates to modify the reference path and remove zig-zag
+oscillations before the smoothing filters and gear-shift logic are applied.
+
 These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
 all signals.
