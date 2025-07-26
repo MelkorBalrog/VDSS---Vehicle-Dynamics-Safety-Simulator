@@ -72,15 +72,23 @@ where `B`, `C`, `D` and `E` are stiffness parameters.
 
 #### Mechanical Model Blocks
 The main mechanical components behave like interconnected black boxes with clear
-inputs and outputs. Their relationships can be sketched as:
-```
-[Throttle]
-   |
-   v
-[Engine] --T_e--> [Clutch] --T_c--> [Transmission] --T_w--> [Tires]
-                                                  |
-                                                  v
-                                             [BrakeSystem]
+inputs and outputs. Their relationships can be visualized using Mermaid:
+```mermaid
+flowchart LR
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e,\omega_e"| Clutch
+  Wheels -->|"\omega_w"| Clutch
+  Clutch -->|"T_c"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  BrakeSystem -->|"T_b"| Wheels
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Pacejka -->|"F_x,F_y"| Chassis
+  Suspension -->|"F_s"| Chassis
+  Chassis -->|"u,v,r"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"RK4"| Motion
 ```
 * **Engine** – accepts throttle position and produces engine torque
   `T_e = torqueCurve(RPM) \times u_{throttle}` limited by `maxTorque`.
@@ -127,8 +135,10 @@ Each mechanical block can be viewed as a self contained subsystem described by
 inputs, outputs and a short physical model.
 
 ###### Throttle
-```
-u_{th} --> [Throttle] --> \theta_{th}
+```mermaid
+flowchart LR
+  u_th(["u_{th}"]) --> Throttle[Throttle]
+  Throttle --> theta_th(["\theta_{th}"])
 ```
 *Inputs*: driver command `u_{th}`
 *Outputs*: opening angle `\theta_{th}`
@@ -139,8 +149,14 @@ clutch is disengaged the delivered opening becomes
 `\theta_{adj}=\theta_{th}(1-e)` where `e` is the clutch engagement percentage.
 
 ###### Engine
-```
-(\theta_{th}, T_{load}) --> [Engine] --> (T_e, \omega_e)
+```mermaid
+flowchart LR
+  theta_th(["\theta_{th}"])
+  load_torque(["T_{load}"])
+  theta_th --> Engine
+  load_torque --> Engine
+  Engine --> T_e(["T_e"])
+  Engine --> omega_e(["\omega_e"])
 ```
 *Inputs*: `\theta_{th}`, load torque `T_{load}`
 *Outputs*: engine torque `T_e`, engine speed `\omega_e`
@@ -151,8 +167,15 @@ from test data. The instantaneous output is
 `\dot{\omega}_e = (T_e - T_{load})/I_e` where `I_e` is engine inertia.
 
 ###### Clutch
-```
-(e, \omega_e, \omega_w) --> [Clutch] --> T_c
+```mermaid
+flowchart LR
+  engage(["e"])
+  omega_e(["\omega_e"])
+  omega_w(["\omega_w"])
+  engage --> Clutch
+  omega_e --> Clutch
+  omega_w --> Clutch
+  Clutch --> T_c(["T_c"])
 ```
 *Inputs*: engagement percentage `e`, engine and wheel speeds
 *Outputs*: transmitted torque `T_c`
@@ -161,8 +184,13 @@ Torque transfer depends on clutch engagement:
 `T_c = (1-e)\,T_{max}` with `T_{max}` the clutch capacity.
 
 ###### Transmission
-```
-(T_c, gear) --> [Transmission] --> T_w
+```mermaid
+flowchart LR
+  T_c(["T_c"])
+  gear(["gear"])
+  T_c --> Transmission
+  gear --> Transmission
+  Transmission --> T_w(["T_w"])
 ```
 *Inputs*: `T_c`, selected gear `g`
 *Outputs*: wheel torque `T_w`
@@ -171,8 +199,11 @@ Wheel torque is amplified by the gear and final drive:
 `T_w = T_c\,\text{gearRatio}(g)\,finalDrive`.
 
 ###### BrakeSystem
-```
-u_b --> [BrakeSystem] --> F_{brake}
+```mermaid
+flowchart LR
+  u_b(["u_b"])
+  u_b --> BrakeSystem
+  BrakeSystem --> F_brake(["F_{brake}"])
 ```
 *Inputs*: brake command `u_b`
 *Outputs*: braking force `F_{brake}`
@@ -182,8 +213,13 @@ Pedal command is converted to a total braking force via
 axles using the brake bias.
 
 ###### LeafSpringSuspension
-```
-(\Delta x, v) --> [LeafSpringSuspension] --> F_s
+```mermaid
+flowchart LR
+  dx(["\Delta x"])
+  vel(["v"])
+  dx --> Suspension
+  vel --> Suspension
+  Suspension --> F_s(["F_s"])
 ```
 *Inputs*: spring deflection `\Delta x`, velocity `v`
 *Outputs*: suspension force `F_s`
@@ -193,8 +229,12 @@ Suspension forces use a spring damper relation
 acceleration.
 
 ###### AckermannGeometry
-```
-\delta --> [AckermannGeometry] --> (\delta_i, \delta_o)
+```mermaid
+flowchart LR
+  delta(["\delta"])
+  delta --> Ackermann
+  Ackermann --> delta_i(["\delta_i"])
+  Ackermann --> delta_o(["\delta_o"])
 ```
 *Input*: desired steering angle `\delta`
 *Outputs*: inner/outer wheel angles `\delta_i`,`\delta_o`
@@ -203,8 +243,16 @@ The geometry obeys
 `\tan\delta_{i,o}=L/(R\mp W/2)` where `L` is wheelbase and `W` track width.
 
 ###### Pacejka96TireModel and PacejkaMagicFormula
-```
-(\alpha, \kappa, F_z) --> [Pacejka96TireModel] --> (F_x, F_y)
+```mermaid
+flowchart LR
+  alpha(["\alpha"])
+  kappa(["\kappa"])
+  Fz(["F_z"])
+  alpha --> Tire
+  kappa --> Tire
+  Fz --> Tire
+  Tire --> F_x(["F_x"])
+  Tire --> F_y(["F_y"])
 ```
 *Inputs*: slip angle `\alpha`, slip ratio `\kappa`, normal load `F_z`
 *Outputs*: tire forces `F_x`,`F_y`
@@ -213,8 +261,12 @@ Both tire models implement the Pacejka equations to provide longitudinal and
 lateral grip based on `\alpha` and `\kappa`.
 
 ###### HitchModel
-```
-states --> [HitchModel] --> (F_h, \delta)
+```mermaid
+flowchart LR
+  states(["states"])
+  states --> Hitch
+  Hitch --> F_h(["F_h"])
+  Hitch --> delta(["\delta"])
 ```
 *Inputs*: tractor/trailer states
 *Outputs*: hitch forces and articulation angle
@@ -222,8 +274,166 @@ states --> [HitchModel] --> (F_h, \delta)
 The hitch applies a spring\–damper moment `M_h=k_h\,\delta+c_h\,\dot\delta`. The
 angle `\delta` is integrated with RK4 together with trailer yaw rate.
 
-### Control
-Adaptive cruise (`acc_Controller`), PID and jerk controllers, lateral/longitudinal limiters and the `purePursuit_PathFollower` are implemented here. Controllers output throttle, brake and steering commands each cycle.
+### Interface Views
+The following diagrams offer focused views of how signals travel through the
+subsystems for different motion components.
+
+#### Longitudinal Drive Chain
+```mermaid
+flowchart LR
+  throttleCmd[Throttle Cmd] --> Throttle
+  Throttle --> Engine
+  Engine --> Transmission
+  Transmission --> Differential
+  Differential --> Wheels
+  BrakeSystem --> Wheels
+  Wheels --> ForceCalc
+  ForceCalc --> Dynamics
+  Dynamics --> Kinematics
+  Kinematics --> VehicleState[Vehicle State]
+```
+
+#### Steering and Hitch Chain
+```mermaid
+flowchart LR
+  steerCmd[Steering Cmd] --> Ackermann
+  Ackermann --> Wheels
+  Wheels --> TireModel[Pacejka Tire Model]
+  HitchModel --> ForceCalc
+  TireModel --> ForceCalc
+  ForceCalc --> Dynamics
+  Dynamics --> Kinematics
+  Kinematics --> VehicleState
+```
+
+## Vehicle Modeling Flow
+The following diagram summarizes how driver inputs propagate through the
+mechanical subsystems to produce vehicle motion.
+
+```mermaid
+flowchart LR
+  subgraph Simulation
+    SimManager --> Controllers
+  end
+  subgraph Driver Inputs
+    th[Throttle Cmd]
+    br[Brake Cmd]
+    st[Steering Cmd]
+  end
+  Controllers --> th
+  Controllers --> br
+  Controllers --> st
+  th -->|"u_{th}"| Throttle
+  Throttle -->|"\theta_{th}"| Engine
+  Engine -->|"T_e,\omega_e"| Clutch
+  Wheels -->|"\omega_w"| Clutch
+  Clutch -->|"T_c"| Transmission
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_{axle}"| Wheels
+  br -->|"u_b"| BrakeSystem
+  BrakeSystem -->|"T_b"| Wheels
+  st -->|"\delta"| Ackermann
+  Ackermann -->|"\delta_i,\delta_o"| Wheels
+  Wheels -->|"\kappa,\alpha"| Pacejka[Pacejka Tire Model]
+  Pacejka -->|"F_x,F_y"| ForceCalc
+  Suspension -->|"F_s"| ForceCalc
+  HitchModel -->|"F_h"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"rates"| Kinematics
+  Kinematics -->|"RK4"| Motion[Vehicle State]
+  Motion -->|"u,v,r"| ForceCalc
+  Motion -->|"v_x,v_y"| Wheels
+```
+
+The labels show the key state variables exchanged between the blocks. For
+example the engine produces torque `T_e = f(\omega_e)\,\theta_{th}` which the
+transmission multiplies to `T_w = T_c\,\text{gearRatio}\,finalDrive`. Wheels
+provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
+compute `F_x` and `F_y`. These forces together with the suspension reaction
+`F_s` are summed by `ForceCalculator` yielding accelerations
+`a_x`, `a_y` and yaw moment `M_z`. `DynamicsUpdater` integrates the resulting
+rates with a Runge\--Kutta 4 step.
+
+Each block corresponds to the components described above. Driver commands enter
+on the left and the integrated vehicle state emerges on the right after the
+dynamics calculations.
+
+### Control Modules
+Driver inputs are shaped by a set of controllers before reaching the mechanical blocks.  The figure below places the main control modules in context.
+
+```mermaid
+flowchart LR
+  Inputs[User Commands] -->|speed setpoint| PID
+  PID -->|accel| ACC
+  ACC -->|limited accel| LongLim[Longitudinal Limiter]
+  Inputs -->|path| PP[Pure Pursuit]
+  PP -->|steer request| LatLim[Lateral Limiter]
+  LatLim --> Jerk
+  LongLim --> Jerk
+  Jerk -->|smoothed accel| Throttle
+  Jerk -->|smoothed steer| Ackermann
+```
+
+* **PID Speed Controller** computes acceleration using
+  \(a = K_p e + K_i \int e\,dt + K_d\,\dot e\) where the error \(e\) is the
+  difference between desired and filtered speed.  Cornering speed reduction is
+  applied if the turn radius is small.
+* **ACC Controller** modifies the PID output when approaching a curve.  When the
+  distance to a curve is below \(v \times t_{lookahead}\) the commanded speed is
+  reduced by a factor and jerk is limited to \(0.7 g\).
+* **Pure Pursuit Path Follower** predicts waypoints ahead of the vehicle and
+  computes the steering angle \(\delta = \tan^{-1}\frac{2L\sin\alpha}{d}\).  The
+  angle passes through a Gaussian and low\-pass filter to reduce oscillations.
+* **Longitudinal Limiter** reads calibration curves from Excel to cap allowable
+  acceleration and braking as functions of speed.
+* **Lateral Limiter** loads a steering limit curve from a file and clamps the
+  requested wheel angle at high speed.
+* **Jerk Controller** bounds the change of acceleration and steering rate using
+  \(\Delta u_{max} = J_{max} \Delta t\).
+
+These modules exchange commands with the mechanical subsystems in the vehicle
+model diagram above.  They also use the filter chain described later to smooth
+all signals.
+
+The diagram below places the controllers around the mechanical drivetrain to
+highlight how commands and feedback loop through the system.
+
+```mermaid
+flowchart TD
+  Inputs[Driver Inputs] --> PID
+  PID --> ACC --> LongLim
+  Inputs --> PP[Pure Pursuit]
+  PP --> LatLim
+  LongLim --> Jerk
+  LatLim --> Jerk
+  Jerk --> Throttle
+  Jerk --> Ackermann
+  Throttle --> Engine --> Transmission --> Differential --> Wheels
+  Ackermann --> Wheels
+  Wheels --> Feedback[Vehicle State]
+  Feedback --> PID
+  Feedback --> PP
+```
+
+#### Control Limiters
+Both steering and longitudinal actuation are limited according to speed
+dependent curves.  The curves are provided as Excel files so they can be tuned
+without modifying the code.
+
+*Longitudinal limits*
+```math
+a_{cmd} = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)
+```
+Acceleration and braking bounds \(a_{max}(v)\) and \(a_{min}(v)\) are read from
+`accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
+through a Gaussian filter and then ramped over several steps to avoid jerks.
+
+*Lateral limits*
+```math
+\delta_{lim} = \mathrm{interp}(v, \text{speedData}, \text{maxAngleData})
+```
+`steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
+The limiter clamps the requested angle to \(\pm\delta_{lim}\) each update.
 
 ### Tests
 MATLAB test functions under `tests/` validate controllers, vehicle dynamics and localization routines. Run `runtests('tests')` inside MATLAB to execute all unit tests.
@@ -245,6 +455,101 @@ params.maxSpeed = 25.0;         % m/s speed limiter
 params.Kp = 1.0;                % PID proportional gain
 params.gearRatios = [14.94 11.21 8.31 6.26 ...];
 ```
+
+### Full Parameter List
+The table below summarises the most important configuration options. Each value
+is loaded into the relevant mechanical block or controller at simulation start.
+
+| Parameter | Description |
+|-----------|-------------|
+|`includeTrailer`|Enable trailer in the model|
+|`tractorMass`, `trailerMass`|Vehicle and trailer mass in kilograms|
+|`initialVelocity`|Starting speed (m/s)|
+|`I_trailerMultiplier`|Scales trailer inertia|
+|`maxDeltaDeg`|Maximum articulation angle|
+|`dtMultiplier`|Time‑step scaling factor|
+|`windowSize`|Moving‑average window for smoothing|
+|`tractorLength`, `tractorWidth`, `tractorHeight`|Tractor body dimensions|
+|`tractorCoGHeight`|Height of tractor centre of gravity|
+|`tractorWheelbase`, `tractorTrackWidth`|Geometry affecting handling|
+|`tractorNumAxles`, `tractorAxleSpacing`|Axle configuration|
+|`numTiresPerAxleTractor`|Tires per axle on the tractor|
+|`trailerLength`, `trailerWidth`, `trailerHeight`|Trailer body dimensions|
+|`trailerCoGHeight`|Trailer centre of gravity height|
+|`trailerWheelbase`, `trailerTrackWidth`|Trailer geometry|
+|`trailerAxlesPerBox`|Axle count for each trailer box|
+|`trailerNumAxles`, `trailerNumBoxes`|Total axles and boxes|
+|`trailerAxleSpacing`|Spacing between trailer axles|
+|`trailerHitchDistance`, `tractorHitchDistance`|Hitch points|
+|`numTiresPerAxleTrailer`|Tires per axle on the trailer|
+|`maxSteeringAngleAtZeroSpeed`|Steering angle limit at standstill|
+|`steeringCurveFilePath`|Excel file with steering limits|
+|`maxSteeringSpeed`|Speed above which steering is limited|
+|`minAccelAtMaxSpeed`, `minDecelAtMaxSpeed`|Acceleration bounds|
+|`accelCurveFilePath`, `decelCurveFilePath`|Excel curves for the limiter|
+|`maxSpeedForAccelLimiting`|Upper speed for limiter lookup|
+|`Kp`, `Ki`, `Kd`|PID gains for speed control|
+|`lambda1Accel`, `lambda2Accel`, `lambda1Vel`, `lambda2Vel`, `lambda1Jerk`, `lambda2Jerk`|Levant differentiator parameters|
+|`enableSpeedController`|Toggle PID controller|
+|`maxSpeed`|Hard speed limit (m/s)|
+|`tractorTireHeight`, `tractorTireWidth`|Tire dimensions|
+|`trailerTireHeight`, `trailerTireWidth`|Trailer tire dimensions|
+|`airDensity`, `dragCoeff`|Aerodynamic coefficients|
+|`slopeAngle`, `roadFrictionCoefficient`|Road grade and friction|
+|`roadSurfaceType`, `roadRoughness`|Surface description|
+|`K_spring`, `C_damping`, `restLength`|Suspension properties|
+|`windSpeed`, `windAngleDeg`|Ambient wind settings|
+|`brakingForce`, `brakeEfficiency`, `brakeBias`, `brakeType`, `maxBrakingForce`|Brake system setup|
+|`maxGear`, `gearRatios`, `finalDriveRatio`|Transmission configuration|
+|`shiftUpSpeed`, `shiftDownSpeed`, `engineBrakeTorque`, `shiftDelay`|Shift logic|
+|`flatTireIndices`|Indices of tires that fail during run|
+|`vehicleType`|Preset for vehicle style|
+|`steeringCommands`, `accelerationCommands`, `tirePressureCommands`|Command scripts executed over time|
+|`torqueFileName`|Excel file with engine torque curve|
+|`maxClutchTorque`, `engagementSpeed`, `disengagementSpeed`|Clutch behaviour|
+|`mapCommands`, `waypoints`|Track layout|
+
+```mermaid
+flowchart LR
+  Basic --> VehicleModel
+  Geometry --> VehicleModel
+  Tire --> Wheels
+  Suspension --> SuspensionBlock[LeafSpring]
+  EngineParams --> Engine
+  TransmissionParams --> Transmission
+  BrakeParams --> BrakeSystem
+  Control --> Controllers
+  Aerodynamics --> ForceCalc
+  Road --> SurfaceFrictionManager
+```
+
+### GUI Tabs and Inputs
+`VehicleGUIManager` organises parameters across multiple configuration tabs.  At
+run time these settings are written into `VehicleModel` and its controllers as
+shown below.
+
+```mermaid
+flowchart LR
+  GUI -->|fields| VehicleParams
+  GUI -->|controller gains| Controllers
+  VehicleParams --> VehicleModel
+  Controllers --> VehicleModel
+```
+
+Key tabs include:
+
+- **Basic Configuration** – masses, inclusion of a trailer and log options.
+- **Control Limits** – upload Excel curves for steering and acceleration
+  limiters and tune ramping windows.
+- **PID Controller** – set gains and jerk limits for speed tracking.
+- **Tires & Suspension** – define tire pressures, spring rates and damping.
+- **Engine/Transmission** – torque curves, gear ratios and shift logic.
+- **Path Follower** – waypoints and lookahead distance for pure pursuit.
+- **Commands** – steering, throttle and tire pressure scripts executed during a
+  run.
+
+Changing any of these fields immediately updates the parameters used in the next
+simulation step, enabling rapid calibration of the entire vehicle model.
 
 ## Capabilities
 - Simulate two vehicles with optional trailers in parallel.
@@ -291,12 +596,44 @@ thresholds = baseDV * scale;  % baseDV from J2980 table
 Collision energy is computed as `0.5 * m * \Delta v^2` and compared with severity thresholds. This extension allows comparing truck crashes against J2980 passenger‑car limits by specifying `J2980AssumedMaxMass` in the GUI.
 
 ## Physics Models
-The simulator models vehicle dynamics with:
-- **Pacejka '96 tire model** (`Pacejka96TireModel`) for lateral and longitudinal forces. Flat tires modify the Pacejka parameters to reduce stiffness and peak grip.
-- **Runge–Kutta 4 integrator** (`DynamicsUpdater.updateStateRK4`) for state propagation each time step.
-- **KinematicsCalculator** for coordinate transforms and velocity derivatives.
-- **ForceCalculator** which sums traction, braking, aerodynamic and suspension forces before updating the dynamics.
-- **Energy balance** for collision analysis: `E_k = 0.5 * m * v^2`.
+The blocks above are tied together using classical vehicle dynamics. The process
+for each simulation step is summarized below.
+
+1. **Slip and Tire Forces**
+   - Slip ratio: `\kappa = (\omega R - v_x)/\max(v_x,0.1)`
+   - Slip angle: `\alpha = \tan^{-1}(v_y / |v_x|)`
+   - Pacejka '96 formula gives the tire forces:
+     `F_x = D_x \sin(C_x \tan^{-1}(B_x \kappa - E_x(B_x \kappa - \tan^{-1}(B_x \kappa))))`
+     `F_y = D_y \sin(C_y \tan^{-1}(B_y \alpha - E_y(B_y \alpha - \tan^{-1}(B_y \alpha))))`
+
+2. **Force Summation**
+   - Aerodynamic drag: `F_d = 0.5\,\rho\,C_d\,A\,v^2`
+   - Wheel force: `F_x = T_w/R_w - F_{brake} - F_d`
+   - Net lateral force combines tire and suspension reactions.
+   - Yaw moment: `M_z = l_f F_{yf} - l_r F_{yr}`
+
+3. **Dynamics Update**
+   - Longitudinal: `\frac{du}{dt} = F_x/m + r v`
+   - Lateral: `\frac{dv}{dt} = F_y/m - r u`
+   - Yaw: `\dot r = M_z / I_z`
+   - `KinematicsCalculator` maps body velocities to global rates.
+
+4. **RK4 Integration**
+   Accelerations are integrated with `DynamicsUpdater.updateStateRK4`:
+   ```
+   k1 = f(y)
+   k2 = f(y + dt/2 * k1)
+   k3 = f(y + dt/2 * k2)
+   k4 = f(y + dt * k3)
+   y_{n+1} = y_n + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+   ```
+
+5. **Energy Balance**
+   Collision analysis uses `E_k = 0.5 \, m \, v^2` to compare against severity
+   thresholds.
+
+This chain transforms driver inputs into forces and accelerations that are
+integrated to update position, orientation and velocity every time step.
 
 ## Physics
 The simulator's physics engine combines kinematic relationships with rigid-body
@@ -364,7 +701,45 @@ all updated consistently each time step.
 The dynamic equations determine the accelerations from forces, while the kinematic relations map these accelerations to changes in position and orientation. The RK4 integrator couples them so that forces acting on the vehicle directly influence its motion each timestep.
 
 ## Signal Filtering
-- **Moving average filters** smooth transmission shift logic and force outputs in `Transmission` and `ForceCalculator` (window sizes configurable).
-- **Gaussian filter** plus **low‑pass filter** smooth steering commands inside `purePursuit_PathFollower`.
+The simulator applies several filters to commands and forces so that abrupt
+changes do not destabilize the dynamics. The sequence for each signal is shown
+below.
 
-These filters reduce noise and abrupt changes in the generated commands for more stable simulations.
+```mermaid
+flowchart TD
+  thCmd[Throttle Cmd] --> RateLim[Rate Limiter]
+  RateLim --> Throttle
+  brCmd[Brake Cmd] --> BrakeSystem
+  steerCmd[Steer Cmd] --> Gauss[Gaussian]
+  Gauss --> LowPass
+  LowPass --> Ackermann
+  shiftSig[Shift Logic] --> MovAvg1[Moving Avg]
+  MovAvg1 --> Transmission
+  rawForces[Raw Forces] --> MovAvg2[Moving Avg]
+  MovAvg2 --> ForceCalc
+```
+
+- **Rate limiter** inside `Throttle` gradually applies driver throttle commands.
+- **Moving average filters** smooth gear shifting signals and the forces returned
+  by `ForceCalculator`.
+- **Gaussian filter** followed by a **low‑pass filter** cleans the steering angle
+  computed in `purePursuit_PathFollower`.
+
+These filters act every step in the order shown to yield smoother actuation and
+more stable simulations.
+
+The mathematical form of each filter is:
+
+- **Rate limiter**
+  \[ y_k = \min(\max(x_k, y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t) \]
+  with rate limit \(r_{\max}\).
+- **Gaussian filter**
+  \[ y_k = \sum_{i=-n}^{n} w_i x_{k-i} \] where \(w_i\) are normalised Gaussian weights.
+- **Moving average**
+  \[ y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i} \]
+- **Low-pass filter**
+  \[ y_k = \alpha x_k + (1-\alpha) y_{k-1} \]
+
+Tuning parameters like \(r_{\max}\), window size \(N\) and coefficient \(\alpha\)
+are exposed in the GUI tabs so users can calibrate how aggressively commands are
+smoothed.
