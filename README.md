@@ -104,8 +104,13 @@ flowchart LR
   ```math
   T_w = T_c \times gearRatio \times finalDriveRatio
   ```
-* **BrakeSystem** – converts brake pedal command to braking torque applied to
-  the wheels.
+* **BrakeSystem** – converts the brake pedal command into braking torque
+  applied to the wheels.
+  ```math
+  F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
+  ```
+  The resulting force is distributed between the axles according to the
+  brake bias.
 * **LeafSpringSuspension** – generates suspension force
   ```math
   F_s = -K\,\Delta x - C\,v
@@ -129,7 +134,7 @@ Each mechanical block acts as a black box with defined inputs and outputs:
   `T_w` and updated gear ratio.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
   ```math
-  T_b = u_b\, \mathrm{maxBrakingForce}\, \mathrm{brakeEfficiency}
+  T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
   ```
 - **LeafSpringSuspension** – inputs: spring deflection `\Delta x` and
   velocity `v`; output suspension force `F_s`.
@@ -227,9 +232,11 @@ flowchart LR
 *Inputs*: brake command `u_b`
 *Outputs*: braking force `F_{brake}`
 
-Pedal command is converted to a total braking force via
-\(F_{brake}=u_b\,\mathrm{maxBrakingForce}\,\mathrm{brakeEfficiency}\) which is then split between the
-axles using the brake bias.
+The pedal command (u_b) is mapped to the total braking force:
+```math
+F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
+```
+This force is then split between the axles according to the brake bias.
 
 ###### LeafSpringSuspension
 ```mermaid
@@ -761,10 +768,11 @@ for each simulation step is summarized below.
      ```
 
 2. **Force Summation**
-   - Aerodynamic drag: \(F_d = 0.5\,\rho\,C_d\,A\,v^2\)
-   - Wheel force: \(F_x = T_w/R_w - F_{brake} - F_d\)
-   - Net lateral force combines tire and suspension reactions.
-   - Yaw moment: \(M_z = l_f F_{yf} - l_r F_{yr}\)
+    - Aerodynamic drag: \(F_d = 0.5\,\rho\,C_d\,A\,v^2\)
+    - Wheel force: \(F_x = T_w/R_w - F_{brake} - F_d\) where
+      \(F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}\)
+    - Net lateral force combines tire and suspension reactions.
+    - Yaw moment: \(M_z = l_f F_{yf} - l_r F_{yr}\)
 
 3. **Dynamics Update**
    - Longitudinal: \(\tfrac{du}{dt} = F_x/m + r v\)
@@ -823,8 +831,9 @@ dynamics. Key formulas include:
 - Tire slip angle:
   \(\alpha = \tan^{-1}(v_y / |v_x|)\)
 - Aerodynamic drag:
-  \(F_d = 0.5\,\rho\,C_d\,A\,v^2\)
-- Net longitudinal force: \(F_x = T_w/R_w - F_{brake} - F_d\)
+    \(F_d = 0.5\,\rho\,C_d\,A\,v^2\)
+  - Net longitudinal force: \(F_x = T_w/R_w - F_{brake} - F_d\) with
+    \(F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}\)
 - Translational kinetic energy: \(E_{trans} = 0.5\,m\,(u^2 + v^2)\)
 - Rotational kinetic energy: \(E_{rot} = 0.5\,I\,\omega^2\)
 - Yaw moment from tire forces: \(M_z = l_f F_{yf} - l_r F_{yr}\)
