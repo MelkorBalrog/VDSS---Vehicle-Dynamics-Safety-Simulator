@@ -58,16 +58,16 @@ The plots update in real time as the simulation runs.
 Includes `KinematicsCalculator`, `ForceCalculator`, `DynamicsUpdater`, `CollisionDetector`, `VehicleCollisionSeverity`, `SurfaceFrictionManager` and `StabilityChecker`. These functions can be compiled to MEX for faster execution via `Scripts/Wrappers/generate_mex`. Key equations:
 - Wheel slip ratio: \(\kappa = (\omega R - v_x) / \max(v_x, 0.1)\)
 - Lateral slip angle: \(\alpha = \tan^{-1}(v_y / |v_x|)\)
-- Aerodynamic drag: \(F_d = 0.5\,C_d\,A\,\rho\,v^2\)
+- Aerodynamic drag: \(F_d = 0.5 \times C_d \times A \times \rho \times v^2\)
 
 ### Graphics
 Objects such as `Vehicle3D`, `Road3D` and `World3D` render 3‑D scenes for the optional `Sim3DAnimator`. Screenshots may be saved automatically at each frame for later video generation.
 
 ### Mechanics
 Contains drivetrain and suspension models (`Engine`, `Transmission`, `BrakeSystem`, `Clutch`, `LeafSpringSuspension`, `Pacejka96TireModel`, etc.). The tire model uses the Pacejka 1996 formula:
-```math
-F_y = D\,\sin\bigl(C\,\tan^{-1}(B\alpha - E(B\alpha - \tan^{-1}(B\alpha)))\bigr)
-```
+$$
+F_y = D \times \sin\bigl(C \times \tan^{-1}(B\alpha - E(B\alpha - \tan^{-1}(B\alpha)))\bigr)
+$$
 where `B`, `C`, `D` and `E` are stiffness parameters.
 
 #### Mechanical Model Blocks
@@ -91,30 +91,30 @@ flowchart LR
   Dynamics -->|"RK4"| Motion
 ```
 * **Engine** – accepts throttle position and produces engine torque
-  ```math
-  T_e = T_{curve}(\omega_e)\,\theta_{th}
-  ```
+$$
+T_e = T_{curve}(\omega_e) \times \theta_{th}
+$$
   limited by `maxTorque`.
 * **Clutch** – transmits torque when engaged using
-  ```math
-  T_c = K_{clutch}\, (\omega_e - \omega_w)
-  ```
+$$
+T_c = K_{clutch} \times (\omega_e - \omega_w)
+$$
 * **Transmission** – multiplies clutch torque by the selected gear ratio and
   final drive:
-  ```math
-  T_w = T_c \times gearRatio \times finalDriveRatio
-  ```
+$$
+T_w = T_c \times gearRatio \times finalDriveRatio
+$$
 * **BrakeSystem** – converts the brake pedal command into braking torque
   applied to the wheels.
-  ```math
-  F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
-  ```
+$$
+F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
+$$
   The resulting force is distributed between the axles according to the
   brake bias.
 * **LeafSpringSuspension** – generates suspension force
-  ```math
-  F_s = -K\,\Delta x - C\,v
-  ```
+$$
+F_s = -K \times \Delta x - C \times v
+$$
   from spring displacement and velocity.
 * **AckermannGeometry** – maps steering wheel angle to left and right wheel
   angles for proper turning radii.
@@ -133,9 +133,9 @@ Each mechanical block acts as a black box with defined inputs and outputs:
 - **Transmission** – input: `T_c` and gear number; output wheel torque
   `T_w` and updated gear ratio.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
-  ```math
-  T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
-  ```
+$$
+T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
+$$
 - **LeafSpringSuspension** – inputs: spring deflection `\Delta x` and
   velocity `v`; output suspension force `F_s`.
 - **AckermannGeometry** – input: desired steering angle `\delta`;
@@ -163,9 +163,9 @@ flowchart LR
 
 The throttle filters the driver command and rate limits the change in opening.
 The actual valve position is computed via a saturation nonlinearity:
-```math
+$$
 \theta_{th} = \mathrm{sat}(u_{th})
-```
+$$
 When the
 clutch is disengaged the delivered opening becomes
 \(\theta_{adj}=\theta_{th}(1-e)\) where `e` is the clutch engagement percentage.
@@ -185,7 +185,7 @@ flowchart LR
 
 Represents a diesel engine whose torque curve \(T_e = f(\omega_e)\) is measured
 from test data. The instantaneous output is
-\(T_e = f(\omega_e)\,\theta_{th}\) limited by `maxTorque`. Engine speed evolves as
+\(T_e = f(\omega_e) \times \theta_{th}\) limited by `maxTorque`. Engine speed evolves as
 \(\dot{\omega}_e = (T_e - T_{load})/I_e\) where `I_e` is engine inertia.
 
 ###### Clutch
@@ -203,7 +203,7 @@ flowchart LR
 *Outputs*: transmitted torque `T_c`
 
 Torque transfer depends on clutch engagement:
-\(T_c = (1-e)\,T_{max}\) with `T_{max}` the clutch capacity.
+\(T_c = (1-e) \times T_{max}\) with `T_{max}` the clutch capacity.
 
 ###### Transmission
 ```mermaid
@@ -218,9 +218,9 @@ flowchart LR
 *Outputs*: wheel torque `T_w`
 
 Wheel torque is amplified by the gear and final drive:
-```math
-T_w = T_c \, \mathrm{gearRatio}(g) \, finalDrive
-```
+$$
+T_w = T_c \times \mathrm{gearRatio}(g) \times finalDrive
+$$
 
 ###### BrakeSystem
 ```mermaid
@@ -233,9 +233,9 @@ flowchart LR
 *Outputs*: braking force `F_{brake}`
 
 The pedal command (u_b) is mapped to the total braking force:
-```math
+$$
 F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}
-```
+$$
 This force is then split between the axles according to the brake bias.
 
 ###### LeafSpringSuspension
@@ -251,7 +251,7 @@ flowchart LR
 *Outputs*: suspension force `F_s`
 
 Suspension forces use a spring damper relation
-\(F_s=-K\,\Delta x-C\,v\) and include load transfer from lateral/longitudinal
+\(F_s = -K \times \Delta x - C \times v\) and include load transfer from lateral/longitudinal
 acceleration.
 
 ###### AckermannGeometry
@@ -298,9 +298,9 @@ flowchart LR
 *Outputs*: hitch forces and articulation angle
 
 The hitch imposes a rotational spring\–damper torque
-```math
-M_h = k_h\,\delta + c_h\,\dot\delta
-```
+$$
+M_h = k_h \times \delta + c_h \times \dot\delta
+$$
 where `\delta` is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
@@ -377,11 +377,11 @@ flowchart LR
 ```
 
 The labels show the key state variables exchanged between the blocks. For
-example the engine produces torque \(T_e = f(\omega_e)\,\theta_{th}\) which the
+example the engine produces torque \(T_e = f(\omega_e) \times \theta_{th}\) which the
 transmission multiplies to
-```math
-T_w = T_c \, \mathrm{gearRatio} \, finalDrive
-```
+$$
+T_w = T_c \times \mathrm{gearRatio} \times finalDrive
+$$
 Wheels
 provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
 compute `F_x` and `F_y`. These forces together with the suspension reaction
@@ -410,14 +410,14 @@ flowchart LR
 ```
 
 * **PID Speed Controller** computes acceleration using
-  \(a = K_p e + K_i \int e\,dt + K_d\,\dot e\) where the error \(e\) is the
+  \(a = K_p \times e + K_i \int e\,dt + K_d \times \dot e\) where the error \(e\) is the
   difference between desired and filtered speed.  Cornering speed reduction is
   applied if the turn radius is small.
 * **ACC Controller** modifies the PID output when approaching a curve.  When the
   distance to a curve is below \(v \times t_{lookahead}\) the commanded speed is
   reduced by a factor and jerk is limited to \(0.7 g\).
 * **Pure Pursuit Path Follower** predicts waypoints ahead of the vehicle and
-  computes the steering angle \(\delta = \tan^{-1}\frac{2L\sin\alpha}{d}\).  The
+  computes the steering angle \(\delta = \tan^{-1}\frac{2L \times \sin\alpha}{d}\).  The
   angle passes through a Gaussian and low\-pass filter to reduce oscillations.
 * **Longitudinal Limiter** reads calibration curves from Excel to cap allowable
   acceleration and braking as functions of speed.
@@ -484,17 +484,17 @@ dependent curves.  The curves are provided as Excel files so they can be tuned
 without modifying the code.
 
 *Longitudinal limits*
-```math
+$$
 a_{cmd} = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)
-```
+$$
 Acceleration and braking bounds \(a_{max}(v)\) and \(a_{min}(v)\) are read from
 `accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
 through a Gaussian filter and then ramped over several steps to avoid jerks.
 
 *Lateral limits*
-```math
+$$
 \delta_{lim} = \mathrm{interp}(v,\, speedData,\, maxAngleData)
-```
+$$
 `steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
 The limiter clamps the requested angle to \(\pm\delta_{lim}\) each update.
 
@@ -777,7 +777,7 @@ This project is licensed under the GNU General Public License v3. See the [LICEN
 scale = sqrt(J2980AssumedMaxMass / vehicleMass);
 thresholds = baseDV * scale;  % baseDV from J2980 table
 ```
-Collision energy is computed as \(0.5\,m\,\Delta v^2\) and compared with severity thresholds. This extension allows comparing truck crashes against J2980 passenger‑car limits by specifying `J2980AssumedMaxMass` in the GUI.
+Collision energy is computed as \(0.5 \times m \times \Delta v^2\) and compared with severity thresholds. This extension allows comparing truck crashes against J2980 passenger‑car limits by specifying `J2980AssumedMaxMass` in the GUI.
 
 ## Physics Models
 The blocks above are tied together using classical vehicle dynamics. The process
@@ -787,13 +787,13 @@ for each simulation step is summarized below.
    - Slip ratio: \(\kappa = (\omega R - v_x)/\max(v_x,0.1)\)
    - Slip angle: \(\alpha = \tan^{-1}(v_y / |v_x|)\)
    - Pacejka '96 formula gives the tire forces:
-     ```math
-     F_x = D_x \sin\bigl(C_x \tan^{-1}(B_x \kappa - E_x(B_x \kappa - \tan^{-1}(B_x \kappa)))\bigr)
-     F_y = D_y \sin\bigl(C_y \tan^{-1}(B_y \alpha - E_y(B_y \alpha - \tan^{-1}(B_y \alpha)))\bigr)
-     ```
+    $$
+    F_x = D_x \sin\bigl(C_x \tan^{-1}(B_x \kappa - E_x(B_x \kappa - \tan^{-1}(B_x \kappa)))\bigr)
+    F_y = D_y \sin\bigl(C_y \tan^{-1}(B_y \alpha - E_y(B_y \alpha - \tan^{-1}(B_y \alpha)))\bigr)
+    $$
 
 2. **Force Summation**
-    - Aerodynamic drag: \(F_d = 0.5\,\rho\,C_d\,A\,v^2\)
+    - Aerodynamic drag: \(F_d = 0.5 \times \rho \times C_d \times A \times v^2\)
     - Wheel force: \(F_x = T_w/R_w - F_{brake} - F_d\) where
       \(F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}\)
     - Net lateral force combines tire and suspension reactions.
@@ -816,7 +816,7 @@ for each simulation step is summarized below.
    ```
 
 5. **Energy Balance**
-   Collision analysis uses \(E_k = 0.5\, m\, v^2\) to compare against severity
+   Collision analysis uses \(E_k = 0.5 \times m \times v^2\) to compare against severity
    thresholds.
 
 This chain transforms driver inputs into forces and accelerations that are
@@ -828,9 +828,9 @@ dynamics. Key formulas include:
 
 ### Kinematics
 - Distance under constant acceleration:
-  \(s = v_0 t + 0.5 a t^2\)
+  \(s = v_0 t + 0.5 \times a \times t^2\)
 - Final velocity:
-  \(v = v_0 + a t\)
+  \(v = v_0 + a \times t\)
 - Rotation matrix from body to world given roll `\phi`, pitch `\theta` and yaw
   `\psi`:
   \(R = R_z(\psi) R_y(\theta) R_x(\phi)\).
@@ -840,7 +840,7 @@ dynamics. Key formulas include:
 - Lateral acceleration update:
   \(a_{lat} = F_y / m\)
 - Roll dynamics internal to `KinematicsCalculator`:
-  \(\mathrm{rollAccel} = (M_{roll} - D_{roll} \, \mathrm{rollRate} - K_{roll} \, \mathrm{rollAngle}) / I_{roll}\)
+  \(\mathrm{rollAccel} = (M_{roll} - D_{roll} \times \mathrm{rollRate} - K_{roll} \times \mathrm{rollAngle}) / I_{roll}\)
 
 ### Dynamics
 - Longitudinal motion:
@@ -856,14 +856,14 @@ dynamics. Key formulas include:
 - Tire slip angle:
   \(\alpha = \tan^{-1}(v_y / |v_x|)\)
 - Aerodynamic drag:
-    \(F_d = 0.5\,\rho\,C_d\,A\,v^2\)
+    \(F_d = 0.5 \times \rho \times C_d \times A \times v^2\)
   - Net longitudinal force: \(F_x = T_w/R_w - F_{brake} - F_d\) with
     \(F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}\)
-- Translational kinetic energy: \(E_{trans} = 0.5\,m\,(u^2 + v^2)\)
-- Rotational kinetic energy: \(E_{rot} = 0.5\,I\,\omega^2\)
+- Translational kinetic energy: \(E_{trans} = 0.5 \times m \times (u^2 + v^2)\)
+- Rotational kinetic energy: \(E_{rot} = 0.5 \times I \times \omega^2\)
 - Yaw moment from tire forces: \(M_z = l_f F_{yf} - l_r F_{yr}\)
 - Newton's second law couples the forces and accelerations as
-  \(m\,a = \sum F\) and \(I\,\alpha = \sum M\) for translational and rotational
+  \(m \times a = \sum F\) and \(I \times \alpha = \sum M\) for translational and rotational
   dynamics.
 
 ### Integration
@@ -891,9 +891,9 @@ The dynamic equations determine the accelerations from forces, while the kinemat
 ## Derivatives, Integrals and the Levant Formula
 The simulator repeatedly differentiates and integrates signals to turn driver
 commands into motion.  Speed control uses a PID loop where
-```
-accel = Kp * error + Ki * \int error \, dt + Kd * \frac{d(error)}{dt}
-```
+$$
+a = K_p \times e + K_i \int e\,dt + K_d \times \frac{d e}{d t}
+$$
 The derivative term is obtained with the **Levant differentiator**, a robust
 sliding-mode algorithm implemented in `LevantDifferentiator`. It estimates
 `d(error)/dt` even when the measured speed is noisy. The integral term collects
@@ -938,23 +938,23 @@ more stable simulations.
 The mathematical form of each filter is:
 
 - **Rate limiter**
-  ```math
+  $$
   y_k = \min\bigl( \max(x_k,\,y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t \bigr)
-  ```
+  $$
   with rate limit \(r_{\max}\).
 - **Gaussian filter**
-  ```math
+  $$
   y_k = \sum_{i=-n}^{n} w_i x_{k-i}
-  ```
+  $$
   where \(w_i\) are normalised Gaussian weights.
 - **Moving average**
-  ```math
+  $$
   y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i}
-  ```
+  $$
 - **Low-pass filter**
-  ```math
+  $$
   y_k = \alpha x_k + (1-\alpha) y_{k-1}
-  ```
+  $$
 
 Tuning parameters like \(r_{\max}\), window size \(N\) and coefficient \(\alpha\)
 are exposed in the GUI tabs so users can calibrate how aggressively commands are
