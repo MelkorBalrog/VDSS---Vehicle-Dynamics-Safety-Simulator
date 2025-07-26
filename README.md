@@ -358,8 +358,62 @@ Each block corresponds to the components described above. Driver commands enter
 on the left and the integrated vehicle state emerges on the right after the
 dynamics calculations.
 
-### Control
-Adaptive cruise (`acc_Controller`), PID and jerk controllers, lateral/longitudinal limiters and the `purePursuit_PathFollower` are implemented here. Controllers output throttle, brake and steering commands each cycle.
+### Control Modules
+Driver inputs are shaped by a set of controllers before reaching the mechanical blocks.  The figure below places the main control modules in context.
+
+```mermaid
+flowchart LR
+  Inputs[User Commands] -->|speed setpoint| PID
+  PID -->|accel| ACC
+  ACC -->|limited accel| LongLim[Longitudinal Limiter]
+  Inputs -->|path| PP[Pure Pursuit]
+  PP -->|steer request| LatLim[Lateral Limiter]
+  LatLim --> Jerk
+  LongLim --> Jerk
+  Jerk -->|smoothed accel| Throttle
+  Jerk -->|smoothed steer| Ackermann
+```
+
+* **PID Speed Controller** computes acceleration using
+  \(a = K_p e + K_i \int e\,dt + K_d\,\dot e\) where the error \(e\) is the
+  difference between desired and filtered speed.  Cornering speed reduction is
+  applied if the turn radius is small.
+* **ACC Controller** modifies the PID output when approaching a curve.  When the
+  distance to a curve is below \(v \times t_{lookahead}\) the commanded speed is
+  reduced by a factor and jerk is limited to \(0.7 g\).
+* **Pure Pursuit Path Follower** predicts waypoints ahead of the vehicle and
+  computes the steering angle \(\delta = \tan^{-1}\frac{2L\sin\alpha}{d}\).  The
+  angle passes through a Gaussian and low\-pass filter to reduce oscillations.
+* **Longitudinal Limiter** reads calibration curves from Excel to cap allowable
+  acceleration and braking as functions of speed.
+* **Lateral Limiter** loads a steering limit curve from a file and clamps the
+  requested wheel angle at high speed.
+* **Jerk Controller** bounds the change of acceleration and steering rate using
+  \(\Delta u_{max} = J_{max} \Delta t\).
+
+These modules exchange commands with the mechanical subsystems in the vehicle
+model diagram above.  They also use the filter chain described later to smooth
+all signals.
+
+#### Control Limiters
+Both steering and longitudinal actuation are limited according to speed
+dependent curves.  The curves are provided as Excel files so they can be tuned
+without modifying the code.
+
+*Longitudinal limits*
+```math
+a_{cmd} = \operatorname{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)
+```
+Acceleration and braking bounds \(a_{max}(v)\) and \(a_{min}(v)\) are read from
+`accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
+through a Gaussian filter and then ramped over several steps to avoid jerks.
+
+*Lateral limits*
+```math
+\delta_{lim} = \operatorname{interp}(v, \text{speedData}, \text{maxAngleData})
+```
+`steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
+The limiter clamps the requested angle to \(\pm\delta_{lim}\) each update.
 
 ### Tests
 MATLAB test functions under `tests/` validate controllers, vehicle dynamics and localization routines. Run `runtests('tests')` inside MATLAB to execute all unit tests.
@@ -381,6 +435,34 @@ params.maxSpeed = 25.0;         % m/s speed limiter
 params.Kp = 1.0;                % PID proportional gain
 params.gearRatios = [14.94 11.21 8.31 6.26 ...];
 ```
+
+### GUI Tabs and Inputs
+`VehicleGUIManager` organises parameters across multiple configuration tabs.  At
+run time these settings are written into `VehicleModel` and its controllers as
+shown below.
+
+```mermaid
+flowchart LR
+  GUI -->|fields| VehicleParams
+  GUI -->|controller gains| Controllers
+  VehicleParams --> VehicleModel
+  Controllers --> VehicleModel
+```
+
+Key tabs include:
+
+- **Basic Configuration** – masses, inclusion of a trailer and log options.
+- **Control Limits** – upload Excel curves for steering and acceleration
+  limiters and tune ramping windows.
+- **PID Controller** – set gains and jerk limits for speed tracking.
+- **Tires & Suspension** – define tire pressures, spring rates and damping.
+- **Engine/Transmission** – torque curves, gear ratios and shift logic.
+- **Path Follower** – waypoints and lookahead distance for pure pursuit.
+- **Commands** – steering, throttle and tire pressure scripts executed during a
+  run.
+
+Changing any of these fields immediately updates the parameters used in the next
+simulation step, enabling rapid calibration of the entire vehicle model.
 
 ## Capabilities
 - Simulate two vehicles with optional trailers in parallel.
@@ -558,3 +640,19 @@ flowchart TD
 
 These filters act every step in the order shown to yield smoother actuation and
 more stable simulations.
+
+The mathematical form of each filter is:
+
+- **Rate limiter**
+  \[ y_k = \min(\max(x_k, y_{k-1}-r_{\max} \Delta t),\; y_{k-1}+r_{\max} \Delta t) \]
+  with rate limit \(r_{\max}\).
+- **Gaussian filter**
+  \[ y_k = \sum_{i=-n}^{n} w_i x_{k-i} \] where \(w_i\) are normalised Gaussian weights.
+- **Moving average**
+  \[ y_k = \tfrac{1}{N} \sum_{i=0}^{N-1} x_{k-i} \]
+- **Low-pass filter**
+  \[ y_k = \alpha x_k + (1-\alpha) y_{k-1} \]
+
+Tuning parameters like \(r_{\max}\), window size \(N\) and coefficient \(\alpha\)
+are exposed in the GUI tabs so users can calibrate how aggressively commands are
+smoothed.
