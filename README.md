@@ -611,7 +611,9 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`pCx1..pKy3`|Pacejka Coefficients|Tire Model|Pacejka tire model coefficients.|
 |`spinnerConfigs`|Spinner Configs|Stiffness & Damping|Spinner graphics config.|
 |`mapCommands`|Map Commands|Mapping|Map creation string.|
-|`waypoints`|Waypoints|Path Follower|Explicit waypoint list.|```mermaid
+|`waypoints`|Waypoints|Path Follower|Explicit waypoint list.|
+
+```mermaid
 flowchart LR
   Basic --> VehicleModel
   Geometry --> VehicleModel
