@@ -95,7 +95,10 @@ flowchart LR
 * **Clutch** – transmits torque when engaged using
   `T_c = K_{clutch}(\omega_e - \omega_w)`.
 * **Transmission** – multiplies clutch torque by the selected gear ratio and
-  final drive: `T_w = T_c \times gearRatio \times finalDriveRatio`.
+  final drive:
+  ```math
+  T_w = T_c \times gearRatio \times finalDriveRatio
+  ```
 * **BrakeSystem** – converts brake pedal command to braking torque applied to
   the wheels.
 * **LeafSpringSuspension** – generates suspension force
@@ -144,7 +147,11 @@ flowchart LR
 *Outputs*: opening angle `\theta_{th}`
 
 The throttle filters the driver command and rate limits the change in opening.
-The actual valve position is `\theta_{th}=\text{saturate}(u_{th})`. When the
+The actual valve position is computed via a saturation nonlinearity:
+```math
+\theta_{th} = \mathrm{sat}(u_{th})
+```
+When the
 clutch is disengaged the delivered opening becomes
 `\theta_{adj}=\theta_{th}(1-e)` where `e` is the clutch engagement percentage.
 
@@ -196,7 +203,9 @@ flowchart LR
 *Outputs*: wheel torque `T_w`
 
 Wheel torque is amplified by the gear and final drive:
-`T_w = T_c\,\text{gearRatio}(g)\,finalDrive`.
+```math
+T_w = T_c \, \mathrm{gearRatio}(g) \, finalDrive
+```
 
 ###### BrakeSystem
 ```mermaid
@@ -347,7 +356,11 @@ flowchart LR
 
 The labels show the key state variables exchanged between the blocks. For
 example the engine produces torque `T_e = f(\omega_e)\,\theta_{th}` which the
-transmission multiplies to `T_w = T_c\,\text{gearRatio}\,finalDrive`. Wheels
+transmission multiplies to
+```math
+T_w = T_c \, \mathrm{gearRatio} \, finalDrive
+```
+Wheels
 provide slip ratio `\kappa` and angle `\alpha` to the Pacejka tire model to
 compute `F_x` and `F_y`. These forces together with the suspension reaction
 `F_s` are summed by `ForceCalculator` yielding accelerations
@@ -435,7 +448,7 @@ through a Gaussian filter and then ramped over several steps to avoid jerks.
 
 *Lateral limits*
 ```math
-\delta_{lim} = \mathrm{interp}(v, \text{speedData}, \text{maxAngleData})
+\delta_{lim} = \mathrm{interp}(v,\, speedData,\, maxAngleData)
 ```
 `steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
 The limiter clamps the requested angle to \(\pm\delta_{lim}\) each update.
@@ -486,6 +499,10 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`trailerNumAxles`, `trailerNumBoxes`|Total axles and boxes|
 |`trailerAxleSpacing`|Spacing between trailer axles|
 |`trailerHitchDistance`, `tractorHitchDistance`|Hitch points|
+|`stiffnessX`, `stiffnessY`, `stiffnessZ`|Hitch stiffness along each axis|
+|`stiffnessRoll`, `stiffnessPitch`, `stiffnessYaw`|Rotational stiffness of the hitch|
+|`dampingX`, `dampingY`, `dampingZ`|Hitch damping along each axis|
+|`dampingRoll`, `dampingPitch`, `dampingYaw`|Rotational damping of the hitch|
 |`numTiresPerAxleTrailer`|Tires per axle on the trailer|
 |`maxSteeringAngleAtZeroSpeed`|Steering angle limit at standstill|
 |`steeringCurveFilePath`|Excel file with steering limits|
@@ -512,6 +529,11 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`steeringCommands`, `accelerationCommands`, `tirePressureCommands`|Command scripts executed over time|
 |`torqueFileName`|Excel file with engine torque curve|
 |`maxClutchTorque`, `engagementSpeed`, `disengagementSpeed`|Clutch behaviour|
+|`maxEngineTorque`, `maxPower`, `idleRPM`, `redlineRPM`, `fuelConsumptionRate`|Engine characteristics|
+|`pressureMatrices`|Per-tire pressure tables|
+|`maxAccelAtZeroSpeed`, `maxDecelAtZeroSpeed`|Optional accel/decel caps|
+|`pCx1..pKy3`|Pacejka tire coefficients|
+|`spinnerConfigs`|Stiffness/damping for multi-trailer spinners|
 |`mapCommands`, `waypoints`|Track layout|
 
 ```mermaid
