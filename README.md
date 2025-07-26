@@ -114,22 +114,22 @@ $F_s = -K \times \Delta x - C \times v$
 ##### Interfaces
 Each mechanical block acts as a black box with defined inputs and outputs:
 - **Throttle** – input: pedal command `u_th`; output: throttle position
-  `$\theta_{th}$`.
-- **Engine** – input: `$\theta_{th}$`; output engine torque `$T_e$` as above.
+  $\theta_{th}$.
+- **Engine** – input: $\theta_{th}$; output engine torque $T_e$ as above.
 - **Clutch** – input: engagement state, engine and wheel speeds;
-  outputs transmitted torque `$T_c$`.
-- **Transmission** – input: `$T_c` and gear number; output wheel torque
-  `$T_w$` and updated gear ratio.
+  outputs transmitted torque $T_c$.
+- **Transmission** – input: $T_c$ and gear number; output wheel torque
+  $T_w$ and updated gear ratio.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
   $T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
-- **LeafSpringSuspension** – inputs: spring deflection `$\Delta x$` and
-  velocity `v`; output suspension force `$F_s$`.
-- **AckermannGeometry** – input: desired steering angle `$\delta$`;
+- **LeafSpringSuspension** – inputs: spring deflection $\Delta x$ and
+  velocity `v`; output suspension force $F_s$.
+- **AckermannGeometry** – input: desired steering angle $\delta$;
   outputs inner and outer wheel angles calculated via
   $\tan\delta_{i,o} = \tfrac{L}{R \mp W/2}$ where `L` is wheelbase and
   `W` track width.
-- **Pacejka96TireModel** – inputs: slip angle `$\alpha$`, slip ratio `$\kappa$`
-  and normal load `$F_z$`; outputs lateral and longitudinal forces using the
+- **Pacejka96TireModel** – inputs: slip angle $\alpha$, slip ratio $\kappa$
+  and normal load $F_z$; outputs lateral and longitudinal forces using the
   formulas above.
 - **HitchModel** – inputs: tractor and trailer states; outputs hitch forces,
   moments and articulation angle integrated with RK4.
@@ -145,7 +145,7 @@ flowchart LR
   Throttle --> theta_th(["θ_th"])
 ```
 *Inputs*: driver command `u_th`
-*Outputs*: opening angle `$\theta_{th}$`
+*Outputs*: opening angle $\theta_{th}$
 
 The throttle filters the driver command and rate limits the change in opening.
 The actual valve position is computed via a saturation nonlinearity:
@@ -164,8 +164,8 @@ flowchart LR
   Engine --> T_e(["T_e"])
   Engine --> omega_e(["ω_e"])
 ```
-*Inputs*: `$\theta_{th}$`, load torque `$T_{load}$`
-*Outputs*: engine torque `$T_e$`, engine speed `$\omega_e$`
+*Inputs*: $\theta_{th}$, load torque $T_{load}$
+*Outputs*: engine torque $T_e$, engine speed $\omega_e$
 
 Represents a diesel engine whose torque curve $T_e = f(\omega_e)$ is measured
 from test data. The instantaneous output is
@@ -184,7 +184,7 @@ flowchart LR
   Clutch --> T_c(["T_c"])
 ```
 *Inputs*: engagement percentage `e`, engine and wheel speeds
-*Outputs*: transmitted torque `$T_c$`
+*Outputs*: transmitted torque $T_c$
 
 Torque transfer depends on clutch engagement:
 $T_c = (1-e) \times T_{max}$ with `T_{max}` the clutch capacity.
@@ -198,8 +198,8 @@ flowchart LR
   gear --> Transmission
   Transmission --> T_w(["T_w"])
 ```
-*Inputs*: `$T_c$`, selected gear `g`
-*Outputs*: wheel torque `$T_w$`
+*Inputs*: $T_c$, selected gear `g`
+*Outputs*: wheel torque $T_w$
 
 Wheel torque is amplified by the gear and final drive:
 $T_w = T_c \times \mathrm{gearRatio}(g) \times finalDrive$
@@ -212,7 +212,7 @@ flowchart LR
   BrakeSystem --> F_brake(["F_{brake}"])
 ```
 *Inputs*: brake command `u_b`
-*Outputs*: braking force `$F_{brake}$`
+*Outputs*: braking force $F_{brake}$
 
 The pedal command (u_b) is mapped to the total braking force:
 $F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
@@ -227,8 +227,8 @@ flowchart LR
   vel --> Suspension
   Suspension --> F_s(["F_s"])
 ```
-*Inputs*: spring deflection `$\Delta x$`, velocity `v`
-*Outputs*: suspension force `$F_s$`
+*Inputs*: spring deflection $\Delta x$, velocity `v`
+*Outputs*: suspension force $F_s$
 
 Suspension forces use a spring damper relation
 $F_s = -K \times \Delta x - C \times v$ and include load transfer from lateral/longitudinal
@@ -242,8 +242,8 @@ flowchart LR
   Ackermann --> delta_i(["δ_i"])
   Ackermann --> delta_o(["δ_o"])
 ```
-*Input*: desired steering angle `$\delta$`
-*Outputs*: inner/outer wheel angles `$\delta_i$`, `$\delta_o$`
+*Input*: desired steering angle $\delta$
+*Outputs*: inner/outer wheel angles $\delta_i$, $\delta_o$
 
 The geometry obeys
 $\tan\delta_{i,o} = \tfrac{L}{R \mp W/2}$ where `L` is wheelbase and `W` track width.
@@ -260,11 +260,11 @@ flowchart LR
   Tire --> F_x(["F_x"])
   Tire --> F_y(["F_y"])
 ```
-*Inputs*: slip angle `$\alpha$`, slip ratio `$\kappa$`, normal load `$F_z$`
-*Outputs*: tire forces `$F_x$, $F_y$`
+*Inputs*: slip angle $\alpha$, slip ratio $\kappa$, normal load $F_z$
+*Outputs*: tire forces $F_x$, $F_y$
 
 Both tire models implement the Pacejka equations to provide longitudinal and
-lateral grip based on `$\alpha$` and `$\kappa$`.
+ lateral grip based on $\alpha$ and $\kappa$.
 
 ###### HitchModel
 ```mermaid
@@ -279,7 +279,7 @@ flowchart LR
 
 The hitch imposes a rotational spring\–damper torque
 $M_h = k_h \times \delta + c_h \times \dot\delta$
-where `$\delta$` is the articulation angle between tractor and trailer.
+where $\delta$ is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
 
