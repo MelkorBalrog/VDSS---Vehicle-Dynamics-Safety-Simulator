@@ -434,13 +434,13 @@ implementation.
 
 ```mermaid
 flowchart TD
-  state[Vehicle state\\npos, speed, orientation] --> pred[Predict future pose\\n\(\hat{p}, \hat{\theta}\)]
-  pred --> lookahead[Find lookahead point]
-  lookahead --> pp[Pure Pursuit formula]
-  pp --> plan[Plan path & zig-zag correction]
-  plan --> gauss[Gaussian + low-pass filters]
-  gauss --> gear[Gear shift logic]
-  gear --> cmd[Steering command]
+  state["Vehicle state<br>pos, speed, orientation"] --> pred["Predict future pose<br>(p_hat, theta_hat)"]
+  pred --> lookahead["Find lookahead point"]
+  lookahead --> pp["Pure Pursuit formula"]
+  pp --> plan["Plan path & zig-zag correction"]
+  plan --> gauss["Gaussian + low-pass filters"]
+  gauss --> gear["Gear shift logic"]
+  gear --> cmd["Steering command"]
 ```
 
 Prediction uses
