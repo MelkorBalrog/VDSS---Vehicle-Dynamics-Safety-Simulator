@@ -16,6 +16,8 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Mechanical Model Blocks](#mechanical-model-blocks)
 - [Physics Models](#physics-models)
 - [Physics](#physics)
+- [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
+- [Collision Severity Determination](#collision-severity-determination)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -960,3 +962,76 @@ $y_k = \alpha x_k + (1-\alpha) y_{k-1}$
 Tuning parameters like $r_{\max}$, window size $N$ and coefficient $\alpha$
 are exposed in the GUI tabs so users can calibrate how aggressively commands are
 smoothed.
+
+## J2980 Extension for Heavy Vehicles
+The SAE&nbsp;J2980 crash severity tables assume a passenger vehicle mass of
+approximately 3000&nbsp;kg. To compare heavier vehicles such as fully loaded
+class&nbsp;8 trucks, VDSS scales the delta‑V thresholds so that the equivalent
+kinetic energy is matched.
+
+### Energy-Based Scaling
+For each delta‑V value $\Delta v_{car}$ from the original table we first
+compute the kinetic energy it represents:
+
+$$
+E = \tfrac{1}{2} m_{\mathrm{car}} \left(\tfrac{\Delta v_{\mathrm{car}}}{3.6}\right)^2
+$$
+
+where $m_{car}$ is the maximum passenger‑vehicle mass in J2980
+(3000&nbsp;kg). To find the equivalent delta‑V for a heavy vehicle of mass
+$m_{hv}$ the same energy is used:
+
+$$
+\Delta v_{\mathrm{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\mathrm{hv}}}}
+$$
+
+This simplifies to a scaling factor
+$$
+\Delta v_{\mathrm{hv}} = \Delta v_{\mathrm{car}} \sqrt{\tfrac{m_{\mathrm{car}}}{m_{\mathrm{hv}}}}
+$$
+
+### Calculation Flow
+
+```mermaid
+flowchart TD
+    dv["ΔV from J2980"] --> ke["KE = 0.5 * m_car * (ΔV / 3.6)^2"]
+    mass["Truck mass"] --> scaled["ΔV_hv = 3.6 * sqrt(2 * KE / m_hv)"]
+    ke --> scaled
+```
+
+### Extended Table for a Class 8 Truck
+Using a fully loaded mass of 36&nbsp;000&nbsp;kg the scaling factor is
+$$\sqrt{\tfrac{3000}{36000}} \approx 0.29$$
+The delta‑V thresholds for each collision type become:
+
+| Severity | Head-On ΔV (kph) | Rear-End ΔV (kph) | Side ΔV (kph) | Oblique ΔV (kph) |
+|---------|------------------|-------------------|---------------|------------------|
+| S0 | 0–2.0 | 0–2.0 | 0–0.7 | 0–1.4 |
+| S1 | 2.0–10.1 | 2.0–10.1 | 0.7–1.7 | 1.4–5.9 |
+| S2 | 10.1–15.2 | 10.1–15.2 | 1.7–11.3 | 5.9–13.7 |
+| S3 | >15.2 | >15.2 | >11.3 | >13.7 |
+
+These values allow the J2980 categories to be applied to heavy vehicles while
+preserving the equivalent kinetic energy threshold.
+
+## Collision Severity Determination
+VDSS evaluates collisions by computing the change in velocity for each vehicle
+at impact. Assuming an elastic collision between masses $m_1$ and $m_2$ with
+relative speed $v_{\mathrm{rel}}$ and impact angle $\theta$, the post-impact
+delta-V for vehicle&nbsp;1 is
+
+$$
+\Delta v_{\mathrm{sim}} = \frac{2 m_2}{m_1 + m_2} \, v_{\mathrm{rel}} \cos \theta.
+$$
+
+The angle $\theta$ is derived from the contact normal in the dynamics engine.
+An occupant severity index follows the exponential relation proposed by
+H.~Smith:
+
+$$
+\mathrm{OSI} = 1 - e^{-v_{\mathrm{rel}}/v_0},
+$$
+
+where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
+simulated $\Delta v_{\mathrm{sim}}$ is compared against the heavy-vehicle
+thresholds in the extended J2980 table to classify the crash as S0–S3.
