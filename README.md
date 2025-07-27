@@ -565,9 +565,10 @@ the predicted pose is available. Internally it:
    along upcoming segments until a point at least `lookaheadDistance` from the
    predicted position is found, interpolating between waypoints when necessary.
 2. **Computes heading error and curvature.** The heading error is
-   `\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}`.
-   Curvature follows as `\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}` and
-   the raw steering request is `\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)`
+   $\alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}$.
+   Curvature follows as
+   $\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}$ and the raw steering
+   request is $\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)$
    clamped to the maximum steering angle.
 3. **Applies smoothing and rate limits.** The command passes through an
    exponential moving average, Gaussian and low-pass filters while the change
@@ -1383,7 +1384,7 @@ An occupant severity index follows the exponential relation proposed by
 H.~Smith:
 
 \[
-\mathrm{OSI} = 1 - e^{-v_{\mathrm{rel}}/v_0},
+\mathrm{OSI} = 1 - e^{-v_{\mathrm{rel}}/v_0}
 \]
 
 where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
