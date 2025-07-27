@@ -1079,24 +1079,24 @@ class&nbsp;8 trucks, VDSS scales the delta‑V thresholds so that the equivalent
 kinetic energy is matched.
 
 ### Energy-Based Scaling
-For each delta‑V value $\Delta v_{\text{car}}$ from the original table we first
+For each delta‑V value $\Delta v_{car}$ from the original table we first
 compute the kinetic energy it represents:
 
 $$
-E = \tfrac{1}{2} m_{\text{car}} \left(\tfrac{\Delta v_{\text{car}}}{3.6}\right)^2
+E = \tfrac{1}{2} m_{car} \left(\tfrac{\Delta v_{car}}{3.6}\right)^2
 $$
 
-where $m_{\text{car}}$ is the maximum passenger‑vehicle mass in J2980
+where $m_{car}$ is the maximum passenger‑vehicle mass in J2980
 (3000&nbsp;kg). To find the equivalent delta‑V for a heavy vehicle of mass
-$m_{\text{hv}}$ the same energy is used:
+$m_{hv}$ the same energy is used:
 
 $$
-\Delta v_{\text{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\text{hv}}}}
+\Delta v_{hv} = 3.6\sqrt{\tfrac{2E}{m_{hv}}}
 $$
 
 This simplifies to a scaling factor
 $$
-\Delta v_{\text{hv}} = \Delta v_{\text{car}} \sqrt{\tfrac{m_{\text{car}}}{m_{\text{hv}}}}
+\Delta v_{hv} = \Delta v_{car} \sqrt{\tfrac{m_{car}}{m_{hv}}}
 $$
 
 ### Calculation Flow
