@@ -557,6 +557,38 @@ and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
 
+##### Pure Pursuit Block
+The **Pure Pursuit** block encapsulates the steering computation carried out once
+the predicted pose is available. Internally it:
+
+1. **Locates a lookahead point** using `findLookaheadPoint`. The routine walks
+   along upcoming segments until a point at least `lookaheadDistance` from the
+   predicted position is found, interpolating between waypoints when necessary.
+2. **Computes heading error and curvature.** The heading error is
+   `\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}`.
+   Curvature follows as `\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}` and
+   the raw steering request is `\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)`
+   clamped to the maximum steering angle.
+3. **Applies smoothing and rate limits.** The command passes through an
+   exponential moving average, Gaussian and low-pass filters while the change
+   between updates is limited by `maxSteeringRate`.
+4. **Integrates gear shifting.** If upcoming curvature exceeds
+   `curvatureShiftThreshold`, the block commands the transmission to shift down
+   and may reduce speed.
+
+Simplified pseudocode:
+
+```matlab
+lookahead = findLookaheadPoint(predPos);
+alpha = wrapToPi(atan2(lookahead(2)-predPos(2), lookahead(1)-predPos(1)) - predTheta);
+kappa = 2 * sin(alpha) / lookaheadDistance;
+delta_raw = atan(wheelbase * kappa);
+delta_filtered = gaussian(lowpass(alphaGain*delta_raw + (1-alphaGain)*prevDelta));
+```
+
+The resulting `delta_filtered` is forwarded to the limiter blocks and the
+Ackermann steering model.
+
 These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
 all signals.
