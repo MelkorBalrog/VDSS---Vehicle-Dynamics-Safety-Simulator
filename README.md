@@ -636,10 +636,11 @@ the predicted pose is available. Internally it:
    along upcoming segments until a point at least `lookaheadDistance` from the
    predicted position is found, interpolating between waypoints when necessary.
 2. **Computes heading error and curvature.** The heading error is
-   $\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}$.
-   Curvature follows as
-   $\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}$ and the raw steering
-   request is $\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)$
+   α = atan2(yₗ − p̂_y, xₗ − p̂_x) − θ̂. 
+   Curvature follows as 
+   κ = 2 · sin(α) / lookaheadDistance 
+   and the raw steering request is 
+   δ_raw = arctan(wheelbase × κ)
    clamped to the maximum steering angle.
 3. **Applies smoothing and rate limits.** The command passes through an
    exponential moving average, Gaussian and low-pass filters while the change
