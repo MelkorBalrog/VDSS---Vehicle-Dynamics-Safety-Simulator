@@ -12,6 +12,7 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 
 ## Table of Contents
 - [Directory Structure](#directory-structure)
+- [Configuration Files](#configuration-files)
 - [Toolboxes](#toolboxes)
 - [Mechanics](#mechanics)
 - [Mechanical Model Blocks](#mechanical-model-blocks)
@@ -28,6 +29,20 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - `tests/` – Unit tests for core algorithms.
 - `codegen/` – Generated binaries when MEX wrappers are built.
 - `VDSS.m` – Entry point that constructs the GUI and orchestrates components.
+
+## Configuration Files
+Vehicle behaviour is largely defined through user editable spreadsheets
+and XML configuration files:
+
+- `Curves/*_torque_curve.xlsx` – engine torque maps used by `Engine`.
+- `Curves/*_AccelCurve.xlsx` – maximum acceleration limits.
+- `Curves/*_DecelCurve.xlsx` – braking deceleration limits.
+- `Curves/*_SteeringCurve.xlsx` – steering angle limits versus speed.
+- `Simulations/*.xml` – full vehicle setups including gear ratios and
+  powertrain options.
+
+Provide your own versions of these files to model different engines,
+brake systems, steering responses or transmissions.
 
 ## Toolboxes
 ### Plotting
@@ -76,7 +91,12 @@ The main mechanical components behave like interconnected black boxes with clear
 inputs and outputs. Their relationships can be visualized using Mermaid:
 ```mermaid
 flowchart LR
+  ConfigFiles["User Files"]
   Throttle -->|"θ_th"| Engine
+  ConfigFiles --> Engine
+  ConfigFiles --> Transmission
+  ConfigFiles --> BrakeSystem
+  ConfigFiles --> Ackermann
   Engine -->|"T_e, ω_e"| Clutch
   Wheels -->|"ω_w"| Clutch
   Clutch -->|"T_c"| Transmission
@@ -328,8 +348,12 @@ subsystems for different motion components.
 #### Longitudinal Drive Chain
 ```mermaid
 flowchart LR
+  ConfigFiles["User Files"]
   throttleCmd[Throttle Cmd] --> Throttle
   Throttle --> Engine
+  ConfigFiles --> Engine
+  ConfigFiles --> Transmission
+  ConfigFiles --> BrakeSystem
   Engine --> Transmission
   Transmission --> Differential
   Differential --> Wheels
@@ -343,7 +367,9 @@ flowchart LR
 #### Steering and Hitch Chain
 ```mermaid
 flowchart LR
+  ConfigFiles["User Files"]
   steerCmd[Steering Cmd] --> Ackermann
+  ConfigFiles --> Ackermann
   Ackermann --> Wheels
   Wheels --> TireModel[Pacejka Tire Model]
   HitchModel --> ForceCalc
@@ -362,6 +388,9 @@ flowchart LR
   subgraph Simulation
     SimManager --> Controllers
   end
+  subgraph ConfigFiles
+    cfg[User Files]
+  end
   subgraph Driver Inputs
     th[Throttle Cmd]
     br[Brake Cmd]
@@ -372,14 +401,18 @@ flowchart LR
   Controllers --> st
   th -->|"u_th"| Throttle
   Throttle -->|"θ_th"| Engine
+  cfg --> Engine
   Engine -->|"T_e, ω_e"| Clutch
   Wheels -->|"ω_w"| Clutch
   Clutch -->|"T_c"| Transmission
+  cfg --> Transmission
   Transmission -->|"T_w"| Differential
   Differential -->|"T_axle"| Wheels
   br -->|"u_b"| BrakeSystem
+  cfg --> BrakeSystem
   BrakeSystem -->|"T_b"| Wheels
   st -->|"δ"| Ackermann
+  cfg --> Ackermann
   Ackermann -->|"δ_i, δ_o"| Wheels
   Wheels -->|"κ, α"| Pacejka[Pacejka Tire Model]
   Pacejka -->|"F_x,F_y"| ForceCalc
@@ -834,7 +867,8 @@ To build your own vehicle:
 
 1. Start VDSS and open the **Basic Configuration** tab.
 2. Pick either preset as a starting point or enter your own masses and geometry.
-3. Load engine torque and limiter curves from the provided Excel files.
+3. Load engine torque and limiter curves as well as braking and steering limits
+   from your Excel configuration files.
 4. Adjust controller gains in the **PID Controller** tab.
 5. Specify lookahead distance and waypoints under **Path Follower**.
 6. Save the resulting parameter set for future runs.
