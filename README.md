@@ -248,7 +248,7 @@ flowchart LR
 Represents a diesel engine whose torque curve $T_e = f(\omega_e)$ is measured
 from test data. The instantaneous output is
 $T_e = f(\omega_e) \times \theta_{th}$ limited by `maxTorque`. Engine speed evolves as
-$\dot{\omega}_e = \tfrac{T_e - T_{load}}{I_e}$ where `I_e` is engine inertia.
+ω̇ₑ = (Tₑ - T_load) / Iₑ where `I_e` is engine inertia.
 
 Related parameters: [`maxEngineTorque`](#param-maxEngineTorque), [`maxPower`](#param-maxPower), [`idleRPM`](#param-idleRPM), [`redlineRPM`](#param-redlineRPM), [`torqueFileName`](#param-torqueFileName)
 
@@ -566,9 +566,7 @@ flowchart LR
   - $\hat{\theta}$ – predicted heading
   - $\hat{p}$ – predicted position
 
-$$
-\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}
-$$
+α = atan2(yₗ - p̂_y, xₗ - p̂_x) - θ̂
   Parameters:
   - $y_l, x_l$ – coordinates of the lookahead point (m)
   - $\hat{p}_x, \hat{p}_y$ – predicted position components (m)
@@ -577,9 +575,7 @@ $$
 
   and the raw steering command becomes
 
-$$
-\delta_{pp} = \operatorname{atan2}(2L \sin \alpha, d_l)
-$$
+δ_pp = atan2(2 * L * sin(α), dₗ)
   Parameters:
   - $L$ – wheelbase (m)
   - $\alpha$ – heading error (rad)
@@ -627,9 +623,7 @@ $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
 $\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]$ represent the
 predicted heading and position after time $t_p$. From the predicted position
 the controller computes
-$$
-\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}
-$$
+α = atan2(yₗ - p̂_y, xₗ - p̂_x) - θ̂
 and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
@@ -734,9 +728,7 @@ flowchart LR
 *Outputs*: heading error $\alpha$ and lookahead distance $d$.
 
 The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
-$$
-\alpha = \operatorname{atan2}(y_l - p_y, x_l - p_x) - \theta.
-$$
+α = atan2(yₗ - p̂_y, xₗ - p̂_x) - θ̂
 
 ###### Compute Curvature
 ```mermaid
@@ -758,9 +750,7 @@ flowchart LR
 *Input*: raw steering $\delta_{pp}$.
 *Output*: smoothed value $\delta_g$.
 
-$$
-\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i]
-$$
+δ_g[k] = ∑₍ᵢ₌₋ₙ₎ⁿ wᵢ · δ_pp[k - i]
 Parameters:
   - $w_i$ – Gaussian weights
   - $\delta_{pp}[k-i]$ – raw steering samples
@@ -776,9 +766,7 @@ flowchart LR
 *Input*: smoothed command $\delta_g$.
 *Output*: filtered steering angle $\delta$.
 
-$$
-\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1]
-$$
+δ[k] = α_f · δ_g[k] + (1 − α_f) · δ[k−1]
 Parameters:
   - $\alpha_f$ – low-pass filter coefficient
   - $\delta_g[k]$ – current smoothed value
@@ -1252,12 +1240,8 @@ for each simulation step is summarized below.
    - Slip ratio: $\kappa = (\omega R - v_x)/\max(v_x,0.1)$
    - Slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
    - Pacejka '96 formula gives the tire forces:
-  $$
-\begin{aligned}
-F_x &= D_x \sin\Bigl(C_x \, \tan^{-1}\bigl(B_x \kappa - E_x \bigl(B_x \kappa - \tan^{-1}(B_x \kappa)\bigr)\bigr)\Bigr),\\
-F_y &= D_y \sin\Bigl(C_y \, \tan^{-1}\bigl(B_y \alpha - E_y \bigl(B_y \alpha - \tan^{-1}(B_y \alpha)\bigr)\bigr)\Bigr).
-\end{aligned}
-  $$
+Fₓ = Dₓ · sin( Cₓ · arctan( Bₓ · κ − Eₓ · (Bₓ · κ − arctan(Bₓ · κ)) ) )
+F_y = D_y · sin( C_y · arctan( B_y · α − E_y · (B_y · α − arctan(B_y · α)) ) )
 
 2. **Force Summation**
     - Aerodynamic drag: $F_d = 0.5 \times \rho \times C_d \times A \times v^2$
@@ -1442,9 +1426,7 @@ $$
 $$
 
 This simplifies to a scaling factor
-$$
-\Delta v_{\mathrm{hv}} = \Delta v_{\mathrm{car}} \sqrt{\tfrac{m_{\mathrm{car}}}{m_{\mathrm{hv}}}}
-$$
+Δv_hv = Δv_car · √(m_car / m_hv)
 
 ### Calculation Flow
 
