@@ -567,7 +567,7 @@ flowchart LR
   - $\hat{p}$ – predicted position
 
 $$
-\alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}
 $$
   Parameters:
   - $y_l, x_l$ – coordinates of the lookahead point (m)
@@ -578,7 +578,7 @@ $$
   and the raw steering command becomes
 
 $$
-\delta_{pp} = \text{atan2}(2L \sin \alpha,\; d_l)
+\delta_{pp} = \operatorname{atan2}(2L \sin \alpha, d_l)
 $$
   Parameters:
   - $L$ – wheelbase (m)
@@ -628,7 +628,7 @@ $\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]$ represent the
 predicted heading and position after time $t_p$. From the predicted position
 the controller computes
 $$
-\alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}
 $$
 and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
@@ -642,7 +642,7 @@ the predicted pose is available. Internally it:
    along upcoming segments until a point at least `lookaheadDistance` from the
    predicted position is found, interpolating between waypoints when necessary.
 2. **Computes heading error and curvature.** The heading error is
-   $\alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}$.
+   $\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}$.
    Curvature follows as
    $\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}$ and the raw steering
    request is $\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)$
@@ -735,7 +735,7 @@ flowchart LR
 
 The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
 $$
-\alpha = \text{atan2}(y_l - p_y,\; x_l - p_x) - \theta.
+\alpha = \operatorname{atan2}(y_l - p_y, x_l - p_x) - \theta.
 $$
 
 ###### Compute Curvature
