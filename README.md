@@ -149,15 +149,17 @@ $F_s = -K \times \Delta x - C \times v$
 Each mechanical block acts as a black box with defined inputs and outputs:
 - **Throttle** – input: pedal command `u_th`; output: throttle position
   $\theta_{th}$.
-- **Engine** – input: $\theta_{th}$; output engine torque $T_e$ as above.
-- **Clutch** – input: engagement state, engine and wheel speeds;
-  outputs transmitted torque $T_c$.
-- **Transmission** – input: $T_c$ and gear number; output wheel torque
-  $T_w$ and updated gear ratio.
+- **Engine** – inputs: throttle angle $\theta_{th}$ and load torque $T_{load}$;
+  outputs engine torque $T_e$ and engine speed $\omega_e$.
+- **Clutch** – inputs: engagement percentage $e$, engine speed $\omega_e$ and
+  wheel speed $\omega_w$; output transmitted torque $T_c$.
+- **Transmission** – inputs: clutch torque $T_c$ and selected gear $g$;
+  output wheel torque $T_w$.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
   $T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
-- **LeafSpringSuspension** – inputs: spring deflection $\Delta x$ and
-  velocity `v`; output suspension force $F_s$.
+ - **LeafSpringSuspension** – inputs: vertical displacement $\Delta x$, vertical
+   velocity $v$, lateral acceleration $a_y$, longitudinal acceleration $a_x$,
+   moment arm and current wheel load; output suspension force $F_s$.
 - **AckermannGeometry** – input: desired steering angle $\delta$;
   outputs inner and outer wheel angles calculated via
   $\tan\delta_{i,o} = \tfrac{L}{R \mp W/2}$ where `L` is wheelbase and
@@ -165,9 +167,10 @@ Each mechanical block acts as a black box with defined inputs and outputs:
 - **Pacejka96TireModel** – inputs: slip angle $\alpha$, slip ratio $\kappa$
   and normal load $F_z$; outputs lateral and longitudinal forces using the
   formulas above.
-  - **HitchModel** – inputs: tractor and trailer state structures containing
-    position, yaw orientation and body-frame velocities; outputs hitch forces,
-    moments and the articulated angle integrated with RK4.
+  - **HitchModel** – inputs: full tractor and trailer state structures
+    (positions, orientations, linear and angular velocities) plus the applied
+    pulling force; outputs hitch forces, moments and the articulation angle
+    integrated with RK4.
 
 ##### Detailed Block Descriptions
 Each mechanical block can be viewed as a self contained subsystem described by
@@ -266,11 +269,21 @@ Related parameters: [`maxBrakingForce`](#param-maxBrakingForce), [`brakingForce`
 flowchart LR
   dx(["Δx"])
   vel(["v"])
+  ay(["a_y"])
+  ax(["a_x"])
+  load(["load"])
+  arm(["moment"])
   dx --> Suspension
   vel --> Suspension
+  ay --> Suspension
+  ax --> Suspension
+  load --> Suspension
+  arm --> Suspension
   Suspension --> F_s(["F_s"])
 ```
-*Inputs*: spring deflection $\Delta x$, velocity `v`
+*Inputs*: vertical displacement $\Delta x$, vertical velocity `v`, lateral
+acceleration $a_y$, longitudinal acceleration $a_x$, moment arm and current
+wheel load
 *Outputs*: suspension force $F_s$
 
 Suspension forces use a spring damper relation
@@ -316,12 +329,17 @@ Related parameters: [`pCx1..pKy3`](#param-pacejka), [`tractorTireHeight`](#param
 ###### HitchModel
 ```mermaid
 flowchart LR
-  states(["states"])
-  states --> Hitch
+  tractorState(["tractor state"])
+  trailerState(["trailer state"])
+  pullForce(["pull force"])
+  tractorState --> Hitch
+  trailerState --> Hitch
+  pullForce --> Hitch
   Hitch --> F_h(["F_h"])
   Hitch --> delta(["δ"])
 ```
-*Inputs*: tractor/trailer states
+*Inputs*: tractor and trailer states with position, orientation and velocity
+components, along with the longitudinal pulling force
 *Outputs*: hitch forces and articulation angle
 
 The hitch imposes a rotational spring\–damper torque
@@ -360,18 +378,23 @@ subsystems for different motion components.
 ```mermaid
 flowchart LR
   ConfigFiles["User Files"]
-  throttleCmd[Throttle Cmd] --> Throttle
-  Throttle --> Engine
+  throttleCmd[Throttle Cmd] -->|"u_th"| Throttle
+  Throttle -->|"θ_th"| Engine
   ConfigFiles --> Engine
+  Engine -->|"T_e, ω_e"| Clutch
+  Wheels -->|"ω_w"| Clutch
+  Clutch -->|"T_c"| Transmission
   ConfigFiles --> Transmission
+  brakeCmd[Brake Cmd] -->|"u_b"| BrakeSystem
   ConfigFiles --> BrakeSystem
-  Engine --> Transmission
-  Transmission --> Differential
-  Differential --> Wheels
-  BrakeSystem --> Wheels
-  Wheels --> ForceCalc
-  ForceCalc --> Dynamics
-  Dynamics --> Kinematics
+  Transmission -->|"T_w"| Differential
+  Differential -->|"T_axle"| Wheels
+  BrakeSystem -->|"T_b"| Wheels
+  Wheels -->|"κ, α"| TireModel[Pacejka]
+  TireModel -->|"F_x,F_y"| ForceCalc
+  Suspension -->|"F_s"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"rates"| Kinematics
   Kinematics --> VehicleState[Vehicle State]
 ```
 
@@ -379,14 +402,16 @@ flowchart LR
 ```mermaid
 flowchart LR
   ConfigFiles["User Files"]
-  steerCmd[Steering Cmd] --> Ackermann
+  steerCmd[Steering Cmd] -->|"δ"| Ackermann
   ConfigFiles --> Ackermann
-  Ackermann --> Wheels
-  Wheels --> TireModel[Pacejka Tire Model]
-  HitchModel --> ForceCalc
-  TireModel --> ForceCalc
-  ForceCalc --> Dynamics
-  Dynamics --> Kinematics
+  Ackermann -->|"δ_i, δ_o"| Wheels
+  Wheels -->|"κ, α"| TireModel[Pacejka]
+  VehicleState[Vehicle State] -->|"states"| HitchModel
+  ForceCalc -->|"pull"| HitchModel
+  HitchModel -->|"F_h"| ForceCalc
+  TireModel -->|"F_x,F_y"| ForceCalc
+  ForceCalc -->|"a_x,a_y,M_z"| Dynamics
+  Dynamics -->|"rates"| Kinematics
   Kinematics --> VehicleState
 ```
 
@@ -427,7 +452,10 @@ flowchart LR
   Ackermann -->|"δ_i, δ_o"| Wheels
   Wheels -->|"κ, α"| Pacejka[Pacejka Tire Model]
   Pacejka -->|"F_x,F_y"| ForceCalc
+  Motion -->|"load,Δx,v,a"| Suspension
   Suspension -->|"F_s"| ForceCalc
+  Motion -->|"state"| HitchModel
+  ForceCalc -->|"pull"| HitchModel
   HitchModel -->|"F_h"| ForceCalc
   ForceCalc -->|"a_x,a_y,M_z"| Dynamics
   Dynamics -->|"rates"| Kinematics
