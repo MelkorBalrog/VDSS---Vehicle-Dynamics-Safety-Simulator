@@ -565,9 +565,9 @@ the predicted pose is available. Internally it:
    along upcoming segments until a point at least `lookaheadDistance` from the
    predicted position is found, interpolating between waypoints when necessary.
 2. **Computes heading error and curvature.** The heading error is
-   $\alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}.$
-   Curvature follows as $\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}$ and
-   the raw steering request is $\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)$
+   `\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}`.
+   Curvature follows as `\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}` and
+   the raw steering request is `\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)`
    clamped to the maximum steering angle.
 3. **Applies smoothing and rate limits.** The command passes through an
    exponential moving average, Gaussian and low-pass filters while the change
@@ -624,7 +624,7 @@ target steering angle.  The classical pure pursuit method uses a single point at
 distance $d$ and applies
 
 \[
-\delta = \tan^{-1}\!\left(\tfrac{2L \sin \alpha}{d}\right)
+\delta = \tan^{-1}\frac{2L \sin \alpha}{d}
 \]
 
 where $L$ is the wheelbase and $\alpha$ the heading error.  VDSS extends this by
@@ -669,7 +669,7 @@ flowchart LR
 *Inputs*: heading error $\alpha$, distance $d$, wheelbase $L$.
 *Output*: raw steering angle $\delta_{pp}$.
 
-\[\delta_{pp} = \tan^{-1}\!\left(\tfrac{2L \sin \alpha}{d}\right)\]
+\[\delta_{pp} = \tan^{-1}\tfrac{2L \sin \alpha}{d}\]
 
 ###### Gaussian Filter
 ```mermaid
