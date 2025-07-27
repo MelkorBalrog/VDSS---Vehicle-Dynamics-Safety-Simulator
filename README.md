@@ -18,6 +18,7 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Physics Models](#physics-models)
 - [Physics](#physics)
 - [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
+- [Collision Severity Determination](#collision-severity-determination)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -133,8 +134,9 @@ Each mechanical block acts as a black box with defined inputs and outputs:
 - **Pacejka96TireModel** – inputs: slip angle $\alpha$, slip ratio $\kappa$
   and normal load $F_z$; outputs lateral and longitudinal forces using the
   formulas above.
-- **HitchModel** – inputs: tractor and trailer states; outputs hitch forces,
-  moments and articulation angle integrated with RK4.
+  - **HitchModel** – inputs: tractor and trailer state structures containing
+    position, yaw orientation and body-frame velocities; outputs hitch forces,
+    moments and the articulated angle integrated with RK4.
 
 ##### Detailed Block Descriptions
 Each mechanical block can be viewed as a self contained subsystem described by
@@ -296,6 +298,26 @@ $M_h = k_h \times \delta + c_h \times \dot\delta$
 where $\delta$ is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
+
+###### Vehicle State Structure
+The term *vehicle state* refers to a structure created by `DynamicsUpdater`
+and passed to `ForceCalculator`, `HitchModel` and other physics modules. Its
+main fields are:
+
+| Field | Description |
+|-------|-------------|
+| `position` | `[x, y, z]` global location of the center of gravity (m) |
+| `orientation` | `[roll, pitch, yaw]` angles in radians |
+| `velocity` | `[u, v, w]` body-frame linear velocities (m/s) |
+| `angularVelocity` | `[p, q, r]` body-frame angular rates (rad/s) |
+| `trailerVelocity` | Trailer linear velocity vector when present |
+| `trailerAngularVelocity` | Trailer angular velocity vector |
+| `lateralAcceleration` | Lateral acceleration $a_y$ (m/s²) |
+| `longitudinalAcceleration` | Longitudinal acceleration $a_x$ (m/s²) |
+
+These variables summarize the instantaneous motion of both tractor and trailer
+and serve as the inputs for computing tire forces, hitch loads and stability
+metrics.
 
 Related parameters: [`trailerHitchDistance`](#param-trailerHitchDistance), [`tractorHitchDistance`](#param-tractorHitchDistance), [`maxDeltaDeg`](#param-maxDeltaDeg), [`I_trailerMultiplier`](#param-I_trailerMultiplier)
 
@@ -1079,44 +1101,68 @@ class&nbsp;8 trucks, VDSS scales the delta‑V thresholds so that the equivalent
 kinetic energy is matched.
 
 ### Energy-Based Scaling
-For each delta‑V value $\Delta v_{\text{car}}$ from the original table we first
+For each delta‑V value $\Delta v_{car}$ from the original table we first
 compute the kinetic energy it represents:
 
 $$
-E = \tfrac{1}{2} m_{\text{car}} \left(\tfrac{\Delta v_{\text{car}}}{3.6}\right)^2
+E = \tfrac{1}{2} m_{\mathrm{car}} \left(\tfrac{\Delta v_{\mathrm{car}}}{3.6}\right)^2
 $$
 
-where $m_{\text{car}}$ is the maximum passenger‑vehicle mass in J2980
+where $m_{car}$ is the maximum passenger‑vehicle mass in J2980
 (3000&nbsp;kg). To find the equivalent delta‑V for a heavy vehicle of mass
-$m_{\text{hv}}$ the same energy is used:
+$m_{hv}$ the same energy is used:
 
 $$
-\Delta v_{\text{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\text{hv}}}}
+\Delta v_{\mathrm{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\mathrm{hv}}}}
 $$
 
 This simplifies to a scaling factor
-$\Delta v_{\text{hv}} = \Delta v_{\text{car}}\sqrt{\tfrac{m_{\text{car}}}{m_{\text{hv}}}}$.
+$$
+\Delta v_{\mathrm{hv}} = \Delta v_{\mathrm{car}} \sqrt{\tfrac{m_{\mathrm{car}}}{m_{\mathrm{hv}}}}
+$$
 
 ### Calculation Flow
 
 ```mermaid
 flowchart TD
-    A[ΔV from J2980] --> B[KE = 0.5 * m_car * (ΔV/3.6)^2]
-    m_hv[Truck mass] --> C[ΔV_hv = 3.6 * sqrt(2*KE/m_hv)]
-    B --> C
+    dv["ΔV from J2980"] --> ke["KE = 0.5 * m_car * (ΔV / 3.6)^2"]
+    mass["Truck mass"] --> scaled["ΔV_hv = 3.6 * sqrt(2 * KE / m_hv)"]
+    ke --> scaled
 ```
 
-### Example Table for a Class 8 Truck
+### Extended Table for a Class 8 Truck
 Using a fully loaded mass of 36&nbsp;000&nbsp;kg the scaling factor is
-$\sqrt{3000/36000} \approx 0.29$. The resulting delta‑V ranges for a head‑on
-collision are:
+$$\sqrt{\tfrac{3000}{36000}} \approx 0.29$$
+The delta‑V thresholds for each collision type become:
 
-| Severity | Passenger ΔV (kph) | Class 8 Truck ΔV (kph) |
-|---------|-------------------|-------------------------|
-| S0 | 0–7 | 0–2.0 |
-| S1 | 7–35 | 2.0–10.1 |
-| S2 | 35–52.5 | 10.1–15.2 |
-| S3 | >52.5 | >15.2 |
+| Severity | Head-On ΔV (kph) | Rear-End ΔV (kph) | Side ΔV (kph) | Oblique ΔV (kph) |
+|---------|------------------|-------------------|---------------|------------------|
+| S0 | 0–2.0 | 0–2.0 | 0–0.7 | 0–1.4 |
+| S1 | 2.0–10.1 | 2.0–10.1 | 0.7–1.7 | 1.4–5.9 |
+| S2 | 10.1–15.2 | 10.1–15.2 | 1.7–11.3 | 5.9–13.7 |
+| S3 | >15.2 | >15.2 | >11.3 | >13.7 |
 
-These values allow the J2980 categories to be applied to vehicles of any mass
-while preserving the equivalent kinetic energy threshold.
+These values allow the J2980 categories to be applied to heavy vehicles while
+preserving the equivalent kinetic energy threshold.
+
+## Collision Severity Determination
+VDSS evaluates collisions by computing the change in velocity for each vehicle
+at impact. Assuming an elastic collision between masses $m_1$ and $m_2$ with
+relative speed $v_{\mathrm{rel}}$ and impact angle $\theta$, the post-impact
+delta-V for vehicle&nbsp;1 is
+
+$$
+\Delta v_{\mathrm{sim}} = \frac{2 m_2}{m_1 + m_2} \, v_{\mathrm{rel}} \cos \theta.
+$$
+
+The angle $\theta$ is derived from the contact normal in the dynamics engine.
+An occupant severity index follows the exponential relation proposed by
+H.~Smith:
+
+$$
+\mathrm{OSI} = 1 - e^{-v_{\mathrm{rel}}/v_0},
+$$
+
+where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
+simulated $\Delta v_{\mathrm{sim}}$ is compared against the heavy-vehicle
+thresholds in the extended J2980 table to classify the crash as S0–S3.
