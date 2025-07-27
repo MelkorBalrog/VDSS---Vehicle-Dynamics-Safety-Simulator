@@ -930,8 +930,10 @@ for each simulation step is summarized below.
    - Slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
    - Pacejka '96 formula gives the tire forces:
    $$
-   F_x = D_x \sin\bigl(C_x \tan^{-1}(B_x \kappa - E_x(B_x \kappa - \tan^{-1}(B_x \kappa)))\bigr) \\
-   F_y = D_y \sin\bigl(C_y \tan^{-1}(B_y \alpha - E_y(B_y \alpha - \tan^{-1}(B_y \alpha)))\bigr)
+   \begin{aligned}
+   F_x &= D_x \sin\bigl(C_x \tan^{-1}(B_x \kappa - E_x (B_x \kappa - \tan^{-1}(B_x \kappa)))\bigr),\\
+   F_y &= D_y \sin\bigl(C_y \tan^{-1}(B_y \alpha - E_y (B_y \alpha - \tan^{-1}(B_y \alpha)))\bigr).
+   \end{aligned}
    $$
 
 2. **Force Summation**
