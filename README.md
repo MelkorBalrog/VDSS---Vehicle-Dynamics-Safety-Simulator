@@ -17,6 +17,7 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Mechanical Model Blocks](#mechanical-model-blocks)
 - [Physics Models](#physics-models)
 - [Physics](#physics)
+- [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -1023,3 +1024,52 @@ $y_k = \alpha x_k + (1-\alpha) y_{k-1}$
 Tuning parameters like $r_{\max}$, window size $N$ and coefficient $\alpha$
 are exposed in the GUI tabs so users can calibrate how aggressively commands are
 smoothed.
+
+## J2980 Extension for Heavy Vehicles
+The SAE&nbsp;J2980 crash severity tables assume a passenger vehicle mass of
+approximately 3000&nbsp;kg. To compare heavier vehicles such as fully loaded
+class&nbsp;8 trucks, VDSS scales the delta‑V thresholds so that the equivalent
+kinetic energy is matched.
+
+### Energy-Based Scaling
+For each delta‑V value $\Delta v_{\text{car}}$ from the original table we first
+compute the kinetic energy it represents:
+
+$$
+E = \tfrac{1}{2} m_{\text{car}} \left(\tfrac{\Delta v_{\text{car}}}{3.6}\right)^2
+$$
+
+where $m_{\text{car}}$ is the maximum passenger‑vehicle mass in J2980
+(3000&nbsp;kg). To find the equivalent delta‑V for a heavy vehicle of mass
+$m_{\text{hv}}$ the same energy is used:
+
+$$
+\Delta v_{\text{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\text{hv}}}}
+$$
+
+This simplifies to a scaling factor
+$\Delta v_{\text{hv}} = \Delta v_{\text{car}}\sqrt{\tfrac{m_{\text{car}}}{m_{\text{hv}}}}$.
+
+### Calculation Flow
+
+```mermaid
+flowchart TD
+    A[ΔV from J2980] --> B[KE = 0.5 * m_car * (ΔV/3.6)^2]
+    m_hv[Truck mass] --> C[ΔV_hv = 3.6 * sqrt(2*KE/m_hv)]
+    B --> C
+```
+
+### Example Table for a Class 8 Truck
+Using a fully loaded mass of 36&nbsp;000&nbsp;kg the scaling factor is
+$\sqrt{3000/36000} \approx 0.29$. The resulting delta‑V ranges for a head‑on
+collision are:
+
+| Severity | Passenger ΔV (kph) | Class 8 Truck ΔV (kph) |
+|---------|-------------------|-------------------------|
+| S0 | 0–7 | 0–2.0 |
+| S1 | 7–35 | 2.0–10.1 |
+| S2 | 35–52.5 | 10.1–15.2 |
+| S3 | >52.5 | >15.2 |
+
+These values allow the J2980 categories to be applied to vehicles of any mass
+while preserving the equivalent kinetic energy threshold.
