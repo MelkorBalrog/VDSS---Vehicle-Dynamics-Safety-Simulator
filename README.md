@@ -19,6 +19,8 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Physics](#physics)
 - [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
 - [Collision Severity Determination](#collision-severity-determination)
+- [Simulation Output Files](#simulation-output-files)
+- [Plotting and Data Interpretation](#plotting-and-data-interpretation)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -1276,3 +1278,30 @@ $$
 where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
 simulated $\Delta v_{\mathrm{sim}}$ is compared against the heavy-vehicle
 thresholds in the extended J2980 table to classify the crash as S0–S3.
+
+## Simulation Output Files
+After each run VDSS saves several files alongside the chosen configuration.  The
+main results are stored in a MATLAB ``.mat`` file whose name starts with the
+simulation name (for example ``simulation_Vehicle1_CollisionSideEnd.mat``).  The
+MAT-file contains time stamped arrays for position, orientation, velocities,
+accelerations, control commands and, when present, trailer states.  Typical
+fields include ``Time``, ``PositionX``, ``PositionY``, ``Orientation``,
+``VelocityU``, ``LateralVelocityV``, ``YawRateR``, ``RollAngle`` and
+``AccelerationLongitudinal``.  Additional signals such as jerk, throttle,
+gear and horse power are also exported.  If a trailer is enabled the file adds
+``TrailerX``/``TrailerY`` and articulation angles.
+
+Text and CSV log files are written using ``VehicleModel.saveLogs``.  These files
+share the simulation name and record informational messages printed during the
+run.  When collision analysis is active ``PlotManager`` produces a
+``collision_severity_report_<timestamp>.txt`` summarizing delta‑V calculations.
+A PNG image of the stability flags over time is also saved for reference.
+
+## Plotting and Data Interpretation
+The ``Scripts`` directory includes ``plotVehicleMotionResults.m`` which loads a
+saved ``.mat`` file and generates a comprehensive set of figures.  Edit the
+``data_file`` variable inside the script to point to your simulation output and
+run it in MATLAB.  The script computes steering wheel rate, converts velocities
+to kilometers per hour and displays each signal in a tiled layout.  Jerk and
+force data are plotted in separate windows.  All processed signals are exported
+to ``SteeringRateData.csv`` for further analysis.
