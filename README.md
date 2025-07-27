@@ -566,9 +566,9 @@ flowchart LR
   - $\hat{\theta}$ – predicted heading
   - $\hat{p}$ – predicted position
 
-  $$
-  \alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
-  \]$$
+$$
+\alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+$$
   Parameters:
   - $y_l, x_l$ – coordinates of the lookahead point (m)
   - $\hat{p}_x, \hat{p}_y$ – predicted position components (m)
@@ -577,9 +577,9 @@ flowchart LR
 
   and the raw steering command becomes
 
-  $$
+$$
 \delta_{pp} = \text{atan2}(2L \sin \alpha,\; d_l)
-  \]$$
+$$
   Parameters:
   - $L$ – wheelbase (m)
   - $\alpha$ – heading error (rad)
@@ -758,7 +758,9 @@ flowchart LR
 *Input*: raw steering $\delta_{pp}$.
 *Output*: smoothed value $\delta_g$.
 
-$$\[\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i]\]$$
+$$
+\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i]
+$$
 Parameters:
   - $w_i$ – Gaussian weights
   - $\delta_{pp}[k-i]$ – raw steering samples
@@ -774,7 +776,9 @@ flowchart LR
 *Input*: smoothed command $\delta_g$.
 *Output*: filtered steering angle $\delta$.
 
-$$\[\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1]\]$$
+$$
+\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1]
+$$
 Parameters:
   - $\alpha_f$ – low-pass filter coefficient
   - $\delta_g[k]$ – current smoothed value
