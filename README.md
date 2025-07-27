@@ -8,7 +8,6 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 1. Open MATLAB and add this repository to the path with `addpath(genpath(pwd))`.
 2. Run `VDSS` to launch the graphical interface and start a default simulation.
 3. Use the menu options to load vehicle parameter files, start/stop runs and save results.
-4. The `Simulations` directory contains several ready-made examples. Open any MAT file there and click **Run** to reproduce the scenario.
 
 ## Table of Contents
 - [Directory Structure](#directory-structure)
@@ -26,7 +25,6 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
 - `Scripts/` – Utility scripts and MEX wrappers.
-- `Simulations/` – Example configurations and output data.
 - `Curves/` – Acceleration, braking and steering profiles used by the controllers.
 - `tests/` – Unit tests for core algorithms.
 - `codegen/` – Generated binaries when MEX wrappers are built.
@@ -40,8 +38,6 @@ and XML configuration files:
 - `Curves/*_AccelCurve.xlsx` – maximum acceleration limits.
 - `Curves/*_DecelCurve.xlsx` – braking deceleration limits.
 - `Curves/*_SteeringCurve.xlsx` – steering angle limits versus speed.
-- `Simulations/*.xml` – full vehicle setups including gear ratios and
-  powertrain options.
 
 Provide your own versions of these files to model different engines,
 brake systems, steering responses or transmissions.  The repository
@@ -53,7 +49,7 @@ includes sample spreadsheets illustrating the expected layout:
 | `Curves/sedan_AccelCurve.xlsx` | Max acceleration by speed (m/s vs m/s²). | `0\t3`, `1\t2.9`, `2\t2.8` |
 | `Curves/sedan_DecelCurve.xlsx` | Max braking decel by speed (m/s vs m/s²). | `0\t-2.4`, `1\t-2.2`, `2\t-2.0` |
 | `Curves/sedan_SteeringCurve.xlsx` | Steering limits (m/s vs deg). | `0\t35`, `5\t30`, `10\t25` |
-| `Simulations/CollisionFrontEnd/*.xml` | Full vehicle setup including gear ratios, masses and waypoints. | `<tractorMass>9070</tractorMass>` |
+| `Class8Truck_And_Sedan_CollisionFrontEnd.xml` | Sample heavy vehicle setup with gear ratios, masses and waypoints. | `<tractorMass>9070</tractorMass>` |
 
 ## Toolboxes
 ### Plotting
@@ -561,6 +557,38 @@ and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
 
+##### Pure Pursuit Block
+The **Pure Pursuit** block encapsulates the steering computation carried out once
+the predicted pose is available. Internally it:
+
+1. **Locates a lookahead point** using `findLookaheadPoint`. The routine walks
+   along upcoming segments until a point at least `lookaheadDistance` from the
+   predicted position is found, interpolating between waypoints when necessary.
+2. **Computes heading error and curvature.** The heading error is
+   `\alpha = \operatorname{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}`.
+   Curvature follows as `\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}` and
+   the raw steering request is `\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)`
+   clamped to the maximum steering angle.
+3. **Applies smoothing and rate limits.** The command passes through an
+   exponential moving average, Gaussian and low-pass filters while the change
+   between updates is limited by `maxSteeringRate`.
+4. **Integrates gear shifting.** If upcoming curvature exceeds
+   `curvatureShiftThreshold`, the block commands the transmission to shift down
+   and may reduce speed.
+
+Simplified pseudocode:
+
+```matlab
+lookahead = findLookaheadPoint(predPos);
+alpha = wrapToPi(atan2(lookahead(2)-predPos(2), lookahead(1)-predPos(1)) - predTheta);
+kappa = 2 * sin(alpha) / lookaheadDistance;
+delta_raw = atan(wheelbase * kappa);
+delta_filtered = gaussian(lowpass(alphaGain*delta_raw + (1-alphaGain)*prevDelta));
+```
+
+The resulting `delta_filtered` is forwarded to the limiter blocks and the
+Ackermann steering model.
+
 These modules exchange commands with the mechanical subsystems in the vehicle
 model diagram above.  They also use the filter chain described later to smooth
 all signals.
@@ -926,7 +954,7 @@ To build your own vehicle:
 
 ### Example Parameters: Class 8 Truck
 Below is a sample of the parameters used for the heavy truck preset. These values
-come from `Simulations/CollisionFrontEnd/Class8Truck_And_Sedan_CollisionFrontEnd.xml`.
+are taken from `Class8Truck_And_Sedan_CollisionFrontEnd.xml` shipped with the repository.
 
 | Parameter | Example Value |
 |-----------|---------------|
@@ -1085,7 +1113,7 @@ flowchart LR
 ```
 
 ## Getting Help
-Use `help <FunctionName>` inside MATLAB for detailed function comments. Example runs are provided in the `Simulations` folder. The `Scripts` directory contains helper utilities for building MEX files and running batch jobs.
+Use `help <FunctionName>` inside MATLAB for detailed function comments. The `Scripts` directory contains helper utilities for building MEX files and running batch jobs.
 
 ## License
 This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE) file for details.
