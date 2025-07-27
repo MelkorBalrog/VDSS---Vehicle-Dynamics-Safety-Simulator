@@ -503,10 +503,15 @@ flowchart LR
   $\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]$. It searches the
   path ahead for a target point.  The heading error is
 
-\[
-\alpha = \operatorname{atan2}(y_l - \hat{p}_y,\ x_l - \hat{p}_x) - \hat{\theta}, \qquad
-\kappa = \frac{2 \sin(\alpha)}{\text{lookaheadDistance}}
-\]
+  $$\[
+  \alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+  \]$$
+
+  and the raw steering command becomes
+
+  $$\[
+\delta_{pp} = \text{atan2}(2L \sin \alpha,\; d_l)
+  \]$$
 
   `planPathWithPredictions` refines the trajectory and the result passes through Gaussian and low\-pass
   filters to remove zig\-zag oscillations.
@@ -545,9 +550,9 @@ $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
 $\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]$ represent the
 predicted heading and position after time $t_p$. From the predicted position
 the controller computes
-\[
-\alpha = \operatorname{atan2}(y_l - \hat{p}_y,\ x_l - \hat{p}_x) - \hat{\theta}
-\]
+$$\[
+\alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+\]$$
 and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
@@ -560,9 +565,9 @@ the predicted pose is available. Internally it:
    along upcoming segments until a point at least `lookaheadDistance` from the
    predicted position is found, interpolating between waypoints when necessary.
 2. **Computes heading error and curvature.** The heading error is
-   $\alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}$.
+   $\alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}$.
    Curvature follows as
-   $\kappa = \frac{2 \sin(\alpha)}{\text{lookaheadDistance}}$ and the raw steering
+   $\kappa = 2 \sin(\alpha) / \text{lookaheadDistance}$ and the raw steering
    request is $\delta_{raw} = \tan^{-1}(\text{wheelbase} \times \kappa)$
    clamped to the maximum steering angle.
 3. **Applies smoothing and rate limits.** The command passes through an
@@ -652,9 +657,9 @@ flowchart LR
 *Outputs*: heading error $\alpha$ and lookahead distance $d$.
 
 The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
-\[
-\alpha = \operatorname{atan2}(y_l - p_y,\ x_l - p_x) - \theta.
-\]
+$$\[
+\alpha = \text{atan2}(y_l - p_y,\; x_l - p_x) - \theta.
+\]$$
 
 ###### Compute Curvature
 ```mermaid
@@ -664,9 +669,9 @@ flowchart LR
 ```
 *Inputs*: heading error $\alpha$, distance $d$, wheelbase $L$.
 *Output*: raw steering angle $\delta_{pp}$.
-\[
-\delta_{pp} = \tan^{-1}\frac{2L \sin \alpha}{d}
-\]
+
+$$\[\delta_{pp} = \tan^{-1}\tfrac{2L \sin \alpha}{d}\]$$
+
 ###### Gaussian Filter
 ```mermaid
 flowchart LR
@@ -1146,12 +1151,12 @@ for each simulation step is summarized below.
    - Slip ratio: $\kappa = (\omega R - v_x)/\max(v_x,0.1)$
    - Slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
    - Pacejka '96 formula gives the tire forces:
-\[
+  $$\[
 \begin{aligned}
-F_x &= D_x \sin\Bigl(C_x \tan^{-1}\bigl(B_x \kappa - E_x \bigl(B_x \kappa - \tan^{-1}(B_x \kappa)\bigr)\bigr)\Bigr),\
-F_y &= D_y \sin\Bigl(C_y \tan^{-1}\bigl(B_y \alpha - E_y \bigl(B_y \alpha - \tan^{-1}(B_y \alpha)\bigr)\bigr)\Bigr).
+F_x &= D_x \sin\Bigl(C_x \, \tan^{-1}\bigl(B_x \kappa - E_x \bigl(B_x \kappa - \tan^{-1}(B_x \kappa)\bigr)\bigr)\Bigr),\\
+F_y &= D_y \sin\Bigl(C_y \, \tan^{-1}\bigl(B_y \alpha - E_y \bigl(B_y \alpha - \tan^{-1}(B_y \alpha)\bigr)\bigr)\Bigr).
 \end{aligned}
-\]
+  \]$$
 
 2. **Force Summation**
     - Aerodynamic drag: $F_d = 0.5 \times \rho \times C_d \times A \times v^2$
