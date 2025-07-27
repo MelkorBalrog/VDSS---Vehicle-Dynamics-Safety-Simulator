@@ -16,6 +16,7 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Mechanical Model Blocks](#mechanical-model-blocks)
 - [Physics Models](#physics-models)
 - [Physics](#physics)
+- [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -960,3 +961,65 @@ $y_k = \alpha x_k + (1-\alpha) y_{k-1}$
 Tuning parameters like $r_{\max}$, window size $N$ and coefficient $\alpha$
 are exposed in the GUI tabs so users can calibrate how aggressively commands are
 smoothed.
+
+## J2980 Extension for Heavy Vehicles
+The SAE&nbsp;J2980 crash severity tables assume a passenger vehicle mass of
+approximately 3000&nbsp;kg. To compare heavier vehicles such as fully loaded
+class&nbsp;8 trucks, VDSS scales the delta‑V thresholds so that the equivalent
+kinetic energy is matched.
+
+### Energy-Based Scaling
+For each delta‑V value $\Delta v_{\text{car}}$ from the original table we first
+compute the kinetic energy it represents:
+
+$$
+E = \tfrac{1}{2} m_{\text{car}} \left(\tfrac{\Delta v_{\text{car}}}{3.6}\right)^2
+$$
+
+where $m_{\text{car}}$ is the maximum passenger‑vehicle mass in J2980
+(3000&nbsp;kg). To find the equivalent delta‑V for a heavy vehicle of mass
+$m_{\text{hv}}$ the same energy is used:
+
+$$
+\Delta v_{\text{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\text{hv}}}}
+$$
+
+This simplifies to a scaling factor
+$$
+\Delta v_{\text{hv}} = \Delta v_{\text{car}} \sqrt{\tfrac{m_{\text{car}}}{m_{\text{hv}}}}
+$$
+
+### Calculation Flow
+
+```mermaid
+flowchart TD
+    A[Delta V from J2980] --> B[KE = 0.5*m_car*(DV/3.6)^2]
+    D[m_hv] --> C[ΔV_hv = 3.6*sqrt(2*KE/m_hv)]
+    B --> C
+```
+
+### J2980 Passenger-Vehicle Thresholds
+
+The original "Average" J2980 table for 3000&nbsp;kg passenger vehicles is:
+
+| Severity | Head-On ΔV (kph) | Rear-End ΔV (kph) | Side ΔV (kph) | Oblique ΔV (kph) |
+|---------|------------------|-------------------|---------------|------------------|
+| S0 | 0–7 | 0–7 | 0–2.5 | 0–4.75 |
+| S1 | 7–35 | 7–35 | 2.5–6 | 4.75–20.5 |
+| S2 | 35–52.5 | 35–52.5 | 6–39 | 20.5–47.5 |
+| S3 | >52.5 | >52.5 | >39 | >47.5 |
+
+### Extended Table for a Class 8 Truck
+Using a fully loaded mass of 36&nbsp;000&nbsp;kg the scaling factor is
+$$\sqrt{\tfrac{3000}{36000}} \approx 0.29$$
+The delta‑V thresholds for each collision type become:
+
+| Severity | Head-On ΔV (kph) | Rear-End ΔV (kph) | Side ΔV (kph) | Oblique ΔV (kph) |
+|---------|------------------|-------------------|---------------|------------------|
+| S0 | 0–2.0 | 0–2.0 | 0–0.7 | 0–1.4 |
+| S1 | 2.0–10.1 | 2.0–10.1 | 0.7–1.7 | 1.4–5.9 |
+| S2 | 10.1–15.2 | 10.1–15.2 | 1.7–11.3 | 5.9–13.7 |
+| S3 | >15.2 | >15.2 | >11.3 | >13.7 |
+
+These values allow the J2980 categories to be applied to heavy vehicles while
+preserving the equivalent kinetic energy threshold.
