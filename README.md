@@ -510,7 +510,7 @@ flowchart LR
   and the raw steering command becomes
 
   $$
-  \delta_{pp} = \operatorname{atan2}(2L \sin \alpha,\; d_l).
+\delta_{pp} = \operatorname{atan2}(2L \sin \alpha,\; d_l)
   $$
 
   `planPathWithPredictions` refines the trajectory and the result passes through Gaussian and low\-pass
@@ -669,7 +669,7 @@ flowchart LR
 *Inputs*: heading error $\alpha$, distance $d$, wheelbase $L$.
 *Output*: raw steering angle $\delta_{pp}$.
 
-$$\delta_{pp} = \tan^{-1}\frac{2L \sin \alpha}{d}.$$
+$$\delta_{pp} = \tan^{-1}\frac{2L \sin \alpha}{d}$$
 
 ###### Gaussian Filter
 ```mermaid
@@ -1151,10 +1151,10 @@ for each simulation step is summarized below.
    - Slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
    - Pacejka '96 formula gives the tire forces:
    $$
-  \begin{aligned}
-  F_x &= D_x \sin\bigl(C_x \operatorname{atan}(B_x \kappa - E_x (B_x \kappa - \operatorname{atan}(B_x \kappa)))\bigr),\\
-  F_y &= D_y \sin\bigl(C_y \operatorname{atan}(B_y \alpha - E_y (B_y \alpha - \operatorname{atan}(B_y \alpha)))\bigr).
-  \end{aligned}
+\begin{aligned}
+F_x &= D_x \sin\Bigl(C_x \, \tan^{-1}\bigl(B_x \kappa - E_x \bigl(B_x \kappa - \tan^{-1}(B_x \kappa)\bigr)\bigr)\Bigr),\\
+F_y &= D_y \sin\Bigl(C_y \, \tan^{-1}\bigl(B_y \alpha - E_y \bigl(B_y \alpha - \tan^{-1}(B_y \alpha)\bigr)\bigr)\Bigr).
+\end{aligned}
   $$
 
 2. **Force Summation**
