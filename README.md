@@ -82,8 +82,20 @@ The plots update in real time as the simulation runs.
 ### Physics
 Includes `KinematicsCalculator`, `ForceCalculator`, `DynamicsUpdater`, `CollisionDetector`, `VehicleCollisionSeverity`, `SurfaceFrictionManager` and `StabilityChecker`. These functions can be compiled to MEX for faster execution via `Scripts/Wrappers/generate_mex`. Key equations:
 - Wheel slip ratio: $\kappa = (\omega R - v_x) / \max(v_x, 0.1)$
+- Parameters:
+  - $\omega$ – wheel angular speed (rad/s)
+  - $R$ – tire radius (m)
+  - $v_x$ – longitudinal vehicle speed (m/s)
 - Lateral slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
+- Parameters:
+  - $v_y$ – lateral vehicle speed (m/s)
+  - $v_x$ – longitudinal vehicle speed (m/s)
 - Aerodynamic drag: $F_d = 0.5 \times C_d \times A \times \rho \times v^2$
+- Parameters:
+  - $C_d$ – drag coefficient
+  - $A$ – frontal area (m²)
+  - $\rho$ – air density (kg/m³)
+  - $v$ – vehicle speed (m/s)
 
 ### Graphics
 Objects such as `Vehicle3D`, `Road3D` and `World3D` render 3‑D scenes for the optional `Sim3DAnimator`. Screenshots may be saved automatically at each frame for later video generation.
@@ -91,6 +103,12 @@ Objects such as `Vehicle3D`, `Road3D` and `World3D` render 3‑D scenes for the 
 ### Mechanics
 Contains drivetrain and suspension models (`Engine`, `Transmission`, `BrakeSystem`, `Clutch`, `LeafSpringSuspension`, `Pacejka96TireModel`, etc.). The tire model uses the Pacejka 1996 formula:
 $F_y = D \times \sin\bigl(C \times \tan^{-1}(B\alpha - E(B\alpha - \tan^{-1}(B\alpha)))\bigr)$
+Parameters:
+  - $B$ – stiffness factor
+  - $C$ – shape factor
+  - $D$ – peak factor
+  - $E$ – curvature factor
+  - $\alpha$ – slip angle (rad)
 where `B`, `C`, `D` and `E` are stiffness parameters.
 
 #### Mechanical Model Blocks
@@ -120,19 +138,40 @@ flowchart LR
 ```
 * **Engine** – accepts throttle position and produces engine torque
 $T_e = T_{curve}(\omega_e) \times \theta_{th}$
+- Parameters:
+  - $\omega_e$ – engine speed (rad/s)
+  - $T_{curve}(\omega_e)$ – torque curve evaluated at $\omega_e$
+  - $\theta_{th}$ – throttle opening fraction
   limited by `maxTorque`.
 * **Clutch** – transmits torque when engaged using
 $T_c = K_{clutch} \times (\omega_e - \omega_w)$
+- Parameters:
+  - $K_{clutch}$ – clutch stiffness
+  - $\omega_e$ – engine speed (rad/s)
+  - $\omega_w$ – wheel speed (rad/s)
 * **Transmission** – multiplies clutch torque by the selected gear ratio and
   final drive:
 $T_w = T_c \times gearRatio \times finalDriveRatio$
+- Parameters:
+  - $T_c$ – clutch torque (N·m)
+  - $gearRatio$ – selected gear ratio
+  - $finalDriveRatio$ – final drive ratio
 * **BrakeSystem** – converts the brake pedal command into braking torque
   applied to the wheels.
 $F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
+- Parameters:
+  - $u_b$ – brake pedal command (0‑1)
+  - $\mathrm{maxBrakingForce}$ – maximum brake force (N)
+  - $\mathrm{brakeEfficiency}$ – efficiency factor
   The resulting force is distributed between the axles according to the
   brake bias.
 * **LeafSpringSuspension** – generates suspension force
 $F_s = -K \times \Delta x - C \times v$
+- Parameters:
+  - $K$ – spring stiffness (N/m)
+  - $\Delta x$ – spring displacement (m)
+  - $C$ – damping coefficient (N·s/m)
+  - $v$ – relative velocity (m/s)
   from spring displacement and velocity.
 * **AckermannGeometry** – maps steering wheel angle to left and right wheel
   angles for proper turning radii.
@@ -160,6 +199,11 @@ Each mechanical block acts as a black box with defined inputs and outputs:
   outputs inner and outer wheel angles calculated via
   $\tan\delta_{i,o} = \tfrac{L}{R \mp W/2}$ where `L` is wheelbase and
   `W` track width.
+  - Parameters:
+    - $L$ – wheelbase (m)
+    - $R$ – turning radius (m)
+    - $W$ – track width (m)
+    - $\delta$ – commanded steering angle (rad)
 - **Pacejka96TireModel** – inputs: slip angle $\alpha$, slip ratio $\kappa$
   and normal load $F_z$; outputs lateral and longitudinal forces using the
   formulas above.
@@ -340,6 +384,11 @@ components, along with the longitudinal pulling force
 
 The hitch imposes a rotational spring\–damper torque
 $M_h = k_h \times \delta + c_h \times \dot\delta$
+Parameters:
+  - $k_h$ – hitch spring constant (N·m/rad)
+  - $c_h$ – hitch damping constant (N·m·s/rad)
+  - $\delta$ – articulation angle between tractor and trailer (rad)
+  - $\dot\delta$ – articulation rate (rad/s)
 where $\delta$ is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
@@ -493,25 +542,49 @@ flowchart LR
 
 * **PID Speed Controller** computes acceleration using
   $a = K_p \times e + K_i \int e\,dt + K_d \times \dot e$ where the error $e$ is the
-  difference between desired and filtered speed.  Cornering speed reduction is
+  Parameters:
+  - $K_p$ – proportional gain
+  - $K_i$ – integral gain
+  - $K_d$ – derivative gain
+  - $e$ – speed error (m/s)
+  The difference between desired and filtered speed.  Cornering speed reduction is
   applied if the turn radius is small.
 * **ACC Controller** modifies the PID output when approaching a curve.  When the
   distance to a curve is below $v \times t_{lookahead}$ the commanded speed is
   reduced by a factor and jerk is limited to $0.7 g$.
-* **Pure Pursuit Path Follower** predicts a lookahead pose using
+  * **Pure Pursuit Path Follower** predicts a lookahead pose using
   $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
   $\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]$. It searches the
   path ahead for a target point.  The heading error is
+  Parameters:
+  - $\theta$ – current heading (rad)
+  - $v$ – vehicle speed (m/s)
+  - $L$ – wheelbase (m)
+  - $\delta$ – steering angle (rad)
+  - $t_p$ – prediction time (s)
+  - $p$ – current position vector
+  - $\hat{\theta}$ – predicted heading
+  - $\hat{p}$ – predicted position
 
   $$
   \alpha = \text{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
-  $$
+  \]$$
+  Parameters:
+  - $y_l, x_l$ – coordinates of the lookahead point (m)
+  - $\hat{p}_x, \hat{p}_y$ – predicted position components (m)
+  - $\hat{\theta}$ – predicted heading (rad)
+  - $\alpha$ – heading error (rad)
 
   and the raw steering command becomes
 
   $$
 \delta_{pp} = \text{atan2}(2L \sin \alpha,\; d_l)
-  $$
+  \]$$
+  Parameters:
+  - $L$ – wheelbase (m)
+  - $\alpha$ – heading error (rad)
+  - $d_l$ – lookahead distance (m)
+  - $\delta_{pp}$ – raw steering angle (rad)
 
   `planPathWithPredictions` refines the trajectory and the result passes through Gaussian and low\-pass
   filters to remove zig\-zag oscillations.
@@ -520,7 +593,11 @@ flowchart LR
 * **Lateral Limiter** loads a steering limit curve from a file and clamps the
   requested wheel angle at high speed.
 * **Jerk Controller** bounds the change of acceleration and steering rate using
-  $\Delta u_{max} = J_{max} \Delta t$.
+$\Delta u_{max} = J_{max} \Delta t$.
+Parameters:
+  - $J_{max}$ – maximum allowed jerk
+  - $\Delta t$ – controller time step (s)
+  - $\Delta u_{max}$ – maximum change of command per step
 
 #### Pure Pursuit Logic
 
@@ -681,7 +758,12 @@ flowchart LR
 *Input*: raw steering $\delta_{pp}$.
 *Output*: smoothed value $\delta_g$.
 
-$$\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i]$$
+$$\[\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i]\]$$
+Parameters:
+  - $w_i$ – Gaussian weights
+  - $\delta_{pp}[k-i]$ – raw steering samples
+  - $n$ – filter half-window size
+  - $\delta_g[k]$ – filtered steering output
 
 ###### Low-pass Filter
 ```mermaid
@@ -692,7 +774,12 @@ flowchart LR
 *Input*: smoothed command $\delta_g$.
 *Output*: filtered steering angle $\delta$.
 
-$$\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1]$$
+$$\[\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1]\]$$
+Parameters:
+  - $\alpha_f$ – low-pass filter coefficient
+  - $\delta_g[k]$ – current smoothed value
+  - $\delta[k-1]$ – previous output
+  - $\delta[k]$ – filtered steering command
 
 ###### Ackermann Steering
 ```mermaid
@@ -713,12 +800,22 @@ without modifying the code.
 
 *Longitudinal limits*
 $a_cmd = \mathrm{clip}\bigl( a_{des},\; a_{min}(v),\; a_{max}(v) \bigr)$
+Parameters:
+  - $a_{des}$ – desired acceleration (m/s²)
+  - $a_{min}(v)$ – speed-dependent minimum acceleration (m/s²)
+  - $a_{max}(v)$ – speed-dependent maximum acceleration (m/s²)
+  - $a_{cmd}$ – limited acceleration command
 Acceleration and braking bounds $a_{max}(v)$ and $a_{min}(v)$ are read from
 `accelCurve.xlsx` and `decelCurve.xlsx`.  Desired acceleration is first passed
 through a Gaussian filter and then ramped over several steps to avoid jerks.
 
 *Lateral limits*
 $δ_lim = \mathrm{interp}(v,\, speedData,\, maxAngleData)$
+Parameters:
+  - $v$ – vehicle speed (m/s)
+  - $speedData$ – calibration speed breakpoints
+  - $maxAngleData$ – allowable steering angles
+  - $δ_lim$ – speed-limited steering angle
 `steerLimits.xlsx` contains pairs of vehicle speed and maximum steering angle.
 The limiter clamps the requested angle to $\pmδ_lim$ each update.
 
