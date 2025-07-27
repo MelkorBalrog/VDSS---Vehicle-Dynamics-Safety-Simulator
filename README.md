@@ -738,6 +738,24 @@ component are described below and linked to their relevant settings:
 - [`pCx1..pKy3`](#param-pacejka) → [Pacejka96TireModel and PacejkaMagicFormula](#pacejka96tiremodel-and-pacejkamagicformula)
 - [`airDensity`](#param-airDensity), [`dragCoeff`](#param-dragCoeff) → [Aerodynamic drag](#dynamics)
 
+### Parameter → Variable Mapping
+The list below clarifies which variables in the equations are controlled by each
+parameter. Only the most relevant pairs are shown.
+
+| Parameter | Formula variable |
+|-----------|------------------|
+|`tractorMass`, `trailerMass`|$m$ in $\tfrac{du}{dt} = F_x/m$|
+|`tractorTireHeight`, `trailerTireHeight`|Wheel radius $R$ in $\kappa=(\omega R-v_x)/\max(v_x,0.1)$|
+|`maxEngineTorque`, `torqueFileName`|$T_e$ curve in $T_e=f(\omega_e)\theta_{th}$|
+|`maxClutchTorque`|$T_{\max}$ in $T_c=(1-e)\,T_{\max}$|
+|`gearRatios`, `finalDriveRatio`|$gearRatio$, $finalDrive$ in $T_w=T_c\,gearRatio\,finalDrive$|
+|`maxBrakingForce`, `brakeEfficiency`|$F_{brake}=u_b\,maxBrakingForce\,brakeEfficiency$|
+|`K_spring`, `C_damping`|$K$, $C$ in $F_s=-K\,\Delta x-C\,v$|
+|`pCx1..pKy3`|Pacejka $B,C,D,E$ coefficients|
+|`airDensity`, `dragCoeff`|$\rho$, $C_d$ in $F_d=0.5\,\rho\,C_d\,A\,v^2$|
+|`windSpeed`, `windAngleDeg`|Wind vector for relative speed in drag formula|
+|`maxDeltaDeg`|$\delta_{\max}$ limit in hitch model|
+
 ```mermaid
 flowchart LR
   Basic --> VehicleModel
