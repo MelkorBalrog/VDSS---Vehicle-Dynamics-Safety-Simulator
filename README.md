@@ -1,4 +1,5 @@
 # VDSS - Vehicle Dynamics Safety Simulator
+Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 
 ## Overview
 VDSS provides a MATLAB based environment for simulating vehicle dynamics and safety scenarios. The top level `VDSS` function sets up the user interface, loads vehicle configurations and executes simulations through the `SimManager` class. The design follows a modular approach where each toolbox encapsulates a specific subsystem (e.g., controls, physics, plotting). Users can modify parameters or replace components without rewriting the entire simulator.
@@ -173,6 +174,8 @@ from test data. The instantaneous output is
 $T_e = f(\omega_e) \times \theta_{th}$ limited by `maxTorque`. Engine speed evolves as
 $\dot{\omega}_e = \tfrac{T_e - T_{load}}{I_e}$ where `I_e` is engine inertia.
 
+Related parameters: [`maxEngineTorque`](#param-maxEngineTorque), [`maxPower`](#param-maxPower), [`idleRPM`](#param-idleRPM), [`redlineRPM`](#param-redlineRPM), [`torqueFileName`](#param-torqueFileName)
+
 ###### Clutch
 ```mermaid
 flowchart LR
@@ -190,6 +193,8 @@ flowchart LR
 Torque transfer depends on clutch engagement:
 $T_c = (1-e) \times T_{max}$ with `T_{max}` the clutch capacity.
 
+Related parameters: [`maxClutchTorque`](#param-maxClutchTorque), [`engagementSpeed`](#param-engagementSpeed), [`disengagementSpeed`](#param-disengagementSpeed)
+
 ###### Transmission
 ```mermaid
 flowchart LR
@@ -205,6 +210,8 @@ flowchart LR
 Wheel torque is amplified by the gear and final drive:
 $T_w = T_c \times \mathrm{gearRatio}(g) \times finalDrive$
 
+Related parameters: [`gearRatios`](#param-gearRatios), [`finalDriveRatio`](#param-finalDriveRatio), [`maxGear`](#param-maxGear), [`shiftUpSpeed`](#param-shiftUpSpeed), [`shiftDownSpeed`](#param-shiftDownSpeed), [`shiftDelay`](#param-shiftDelay)
+
 ###### BrakeSystem
 ```mermaid
 flowchart LR
@@ -218,6 +225,8 @@ flowchart LR
 The pedal command (u_b) is mapped to the total braking force:
 $F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
 This force is then split between the axles according to the brake bias.
+
+Related parameters: [`maxBrakingForce`](#param-maxBrakingForce), [`brakingForce`](#param-brakingForce), [`brakeEfficiency`](#param-brakeEfficiency), [`brakeBias`](#param-brakeBias), [`brakeType`](#param-brakeType)
 
 ###### LeafSpringSuspension
 ```mermaid
@@ -234,6 +243,8 @@ flowchart LR
 Suspension forces use a spring damper relation
 $F_s = -K \times \Delta x - C \times v$ and include load transfer from lateral/longitudinal
 acceleration.
+
+Related parameters: [`K_spring`](#param-K_spring), [`C_damping`](#param-C_damping), [`restLength`](#param-restLength)
 
 ###### AckermannGeometry
 ```mermaid
@@ -267,6 +278,8 @@ flowchart LR
 Both tire models implement the Pacejka equations to provide longitudinal and
  lateral grip based on $\alpha$ and $\kappa$.
 
+Related parameters: [`pCx1..pKy3`](#param-pacejka), [`tractorTireHeight`](#param-tractorTireHeight), [`tractorTireWidth`](#param-tractorTireWidth), [`trailerTireHeight`](#param-trailerTireHeight), [`trailerTireWidth`](#param-trailerTireWidth)
+
 ###### HitchModel
 ```mermaid
 flowchart LR
@@ -283,6 +296,8 @@ $M_h = k_h \times \delta + c_h \times \dot\delta$
 where $\delta$ is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
+
+Related parameters: [`trailerHitchDistance`](#param-trailerHitchDistance), [`tractorHitchDistance`](#param-tractorHitchDistance), [`maxDeltaDeg`](#param-maxDeltaDeg), [`I_trailerMultiplier`](#param-I_trailerMultiplier)
 
 ### Interface Views
 The following diagrams offer focused views of how signals travel through the
@@ -494,6 +509,68 @@ flowchart LR
   LowPass -->|"\delta"| Ackermann
 ```
 
+###### Planned Path
+*Outputs*: waypoints $(x_i, y_i)$ describing the reference trajectory.
+
+###### Lookahead Search
+```mermaid
+flowchart LR
+  Vehicle[p, θ] --> Lookahead
+  path[Path] --> Lookahead
+  Lookahead --> alpha(["α"])
+  Lookahead --> d(["d"])
+```
+*Inputs*: current pose $(p,\theta)$ and planned path.
+*Outputs*: heading error $\alpha$ and lookahead distance $d$.
+
+The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
+$\alpha = \mathrm{atan2}(y_l - p_y, x_l - p_x) - \theta$.
+
+###### Compute Curvature
+```mermaid
+flowchart LR
+  alpha_d(["α,d"]) --> Curv
+  Curv --> delta_pp(["δ_{pp}"])
+```
+*Inputs*: heading error $\alpha$, distance $d$, wheelbase $L$.
+*Output*: raw steering angle $\delta_{pp}$.
+
+$$\delta_{pp} = \tan^{-1}\frac{2L \sin \alpha}{d}.$$
+
+###### Gaussian Filter
+```mermaid
+flowchart LR
+  delta_pp(["δ_{pp}"]) --> Gauss
+  Gauss --> delta_g(["δ_g"])
+```
+*Input*: raw steering $\delta_{pp}$.
+*Output*: smoothed value $\delta_g$.
+
+$$\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i].$$
+
+###### Low-pass Filter
+```mermaid
+flowchart LR
+  delta_g(["δ_g"]) --> LowPass
+  LowPass --> delta(["δ"])
+```
+*Input*: smoothed command $\delta_g$.
+*Output*: filtered steering angle $\delta$.
+
+$$\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1].$$
+
+###### Ackermann Steering
+```mermaid
+flowchart LR
+  delta(["δ"]) --> Ackermann
+  Ackermann --> delta_i(["δ_i"])
+  Ackermann --> delta_o(["δ_o"])
+```
+*Input*: commanded steering angle $\delta$.
+*Outputs*: inner and outer wheel angles $\delta_i$, $\delta_o$.
+
+The geometry obeys $\tan \delta_{i,o} = \tfrac{L}{R \mp W/2}$, converting the steering angle to wheel angles.
+
 #### Control Limiters
 Both steering and longitudinal actuation are limited according to speed
 dependent curves.  The curves are provided as Excel files so they can be tuned
@@ -538,13 +615,13 @@ is loaded into the relevant mechanical block or controller at simulation start.
 | Parameter | GUI Label | Tab | Description |
 |-----------|-----------|-----|-------------|
 |`includeTrailer`|Include Trailer|Basic Configuration|Attach trailer; enables hitch dynamics.|
-|`tractorMass`|Tractor Mass (kg)|Basic Configuration|Mass of tractor affecting inertia.|
-|`trailerMass`|Trailer Box Weight (kg)|Basic Configuration|Trailer mass used when trailer enabled.|
+|`<a name="param-tractorMass"></a>tractorMass`|Tractor Mass (kg)|Basic Configuration|Mass of tractor affecting inertia.|
+|`<a name="param-trailerMass"></a>trailerMass`|Trailer Box Weight (kg)|Basic Configuration|Trailer mass used when trailer enabled.|
 |`enableLogging`|Enable Logging|Basic Configuration|Record simulation data to file.|
 |`initialVelocity`|Initial Velocity (m/s)|Basic Configuration|Starting speed of vehicle.|
 |`vehicleType`|Vehicle Type|Basic Configuration|Preset geometry and tuning.|
-|`I_trailerMultiplier`|Trailer Inertia Multiplier|Advanced Configuration|Scaling factor for trailer inertia.|
-|`maxDeltaDeg`|Max Articulation Angle (deg)|Advanced Configuration|Maximum articulation angle.|
+|`<a name="param-I_trailerMultiplier"></a>I_trailerMultiplier`|Trailer Inertia Multiplier|Advanced Configuration|Scaling factor for trailer inertia.|
+|`<a name="param-maxDeltaDeg"></a>maxDeltaDeg`|Max Articulation Angle (deg)|Advanced Configuration|Maximum articulation angle.|
 |`dtMultiplier`|Time Step Multiplier|Advanced Configuration|Integration time step multiplier.|
 |`windowSize`|Signal Smoothing Window Size (sec)|Advanced Configuration|Window size for smoothing filters.|
 |`steeringCurveFilePath`|Steering Curve File|Control Limits|Excel file defining steering limits.|
@@ -582,16 +659,16 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`trailerWheelbase`|Wheelbase (m)|Trailer Parameters|Trailer wheelbase.|
 |`trailerTrackWidth`|Track Width (m)|Trailer Parameters|Trailer track width.|
 |`trailerAxleSpacing`|Axle Spacing (m)|Trailer Parameters|Spacing between trailer axles.|
-|`trailerHitchDistance`|Trailer Hitch Distance (m)|Trailer Parameters|Distance from tractor hitch to trailer.|
-|`tractorHitchDistance`|Tractor Hitch Distance (m)|Trailer Parameters|Distance from rear axle to hitch.|
+|`<a name="param-trailerHitchDistance"></a>trailerHitchDistance`|Trailer Hitch Distance (m)|Trailer Parameters|Distance from tractor hitch to trailer.|
+|`<a name="param-tractorHitchDistance"></a>tractorHitchDistance`|Tractor Hitch Distance (m)|Trailer Parameters|Distance from rear axle to hitch.|
 |`numTiresPerAxleTrailer`|Number of Tires per Axle on Trailer|Trailer Parameters|Tires per trailer axle.|
 |`trailerNumBoxes`|Num Trailer Boxes|Trailer Parameters|Number of cargo boxes.|
 |`trailerAxlesPerBox`|Axles per Box (comma-separated)|Trailer Parameters|Axles per cargo box.|
 |`trailerBoxSpacing`|Box Spacing (m)|Trailer Parameters|Spacing between boxes.|
-|`tractorTireHeight`|Tractor Tire Height (m)|Tires Configuration|Tractor tire outer diameter.|
-|`tractorTireWidth`|Tractor Tire Width (m)|Tires Configuration|Tractor tire width.|
-|`trailerTireHeight`|Trailer Tire Height (m)|Tires Configuration|Trailer tire outer diameter.|
-|`trailerTireWidth`|Trailer Tire Width (m)|Tires Configuration|Trailer tire width.|
+|`<a name="param-tractorTireHeight"></a>tractorTireHeight`|Tractor Tire Height (m)|Tires Configuration|Tractor tire outer diameter.|
+|`<a name="param-tractorTireWidth"></a>tractorTireWidth`|Tractor Tire Width (m)|Tires Configuration|Tractor tire width.|
+|`<a name="param-trailerTireHeight"></a>trailerTireHeight`|Trailer Tire Height (m)|Tires Configuration|Trailer tire outer diameter.|
+|`<a name="param-trailerTireWidth"></a>trailerTireWidth`|Trailer Tire Width (m)|Tires Configuration|Trailer tire width.|
 |`stiffnessX`|Stiffness X (N/m)|Stiffness & Damping|Chassis spring stiffness in X.|
 |`stiffnessY`|Stiffness Y (N/m)|Stiffness & Damping|Chassis spring stiffness in Y.|
 |`stiffnessZ`|Stiffness Z (N/m)|Stiffness & Damping|Chassis spring stiffness in Z.|
@@ -604,38 +681,38 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`dampingRoll`|Damping Roll (N·m·s/rad)|Stiffness & Damping|Roll damping of chassis.|
 |`dampingPitch`|Damping Pitch (N·m·s/rad)|Stiffness & Damping|Pitch damping of chassis.|
 |`dampingYaw`|Damping Yaw (N·m·s/rad)|Stiffness & Damping|Yaw damping of chassis.|
-|`K_spring`|Spring Stiffness K_spring (N/m)|Suspension Model|Suspension spring constant.|
-|`C_damping`|Damping Coefficient C_damping (N·s/m)|Suspension Model|Suspension damping coefficient.|
-|`restLength`|Rest Length (m)|Suspension Model|Suspension rest length.|
-|`maxEngineTorque`|Max Engine Torque (Nm)|Engine Configuration|Engine torque peak.|
-|`maxPower`|Max Power (W)|Engine Configuration|Engine maximum power.|
-|`idleRPM`|Idle RPM|Engine Configuration|Engine idle speed.|
-|`redlineRPM`|Redline RPM|Engine Configuration|Maximum engine RPM.|
-|`engineBrakeTorque`|Engine Brake Torque (Nm)|Engine Configuration|Engine braking torque.|
-|`fuelConsumptionRate`|Fuel Consumption Rate (kg/s)|Engine Configuration|Fuel used per second.|
-|`torqueFileName`|Torque File (Excel)|Engine Configuration|Excel torque curve file.|
-|`maxBrakingForce`|Max Braking Force (N)|Brake Configuration|Maximum wheel braking force.|
-|`brakingForce`|Braking Force (N)|Brake Configuration|Constant braking force command.|
-|`brakeEfficiency`|Brake Efficiency (%)|Brake Configuration|Brake efficiency percentage.|
-|`brakeBias`|Brake Bias (Front/Rear %)|Brake Configuration|Front/rear brake split.|
-|`brakeType`|Brake Type|Brake Configuration|Type of brake system.|
-|`maxClutchTorque`|Max Clutch Torque (Nm)|Clutch Configuration|Maximum clutch torque.|
-|`engagementSpeed`|Clutch Engagement Speed (1/10 s)|Clutch Configuration|Clutch engagement time.|
-|`disengagementSpeed`|Clutch Disengagement Speed (1/10 s)|Clutch Configuration|Clutch disengagement time.|
-|`airDensity`|Air Density (kg/m³)|Aerodynamics|Air density for drag calculations.|
-|`dragCoeff`|Drag Coefficient|Aerodynamics|Vehicle drag coefficient.|
-|`windSpeed`|Wind Speed (m/s)|Aerodynamics|Ambient wind speed.|
-|`windAngleDeg`|Wind Angle (deg)|Aerodynamics|Wind angle relative to vehicle.|
+|`<a name="param-K_spring"></a>K_spring`|Spring Stiffness K_spring (N/m)|Suspension Model|Suspension spring constant.|
+|`<a name="param-C_damping"></a>C_damping`|Damping Coefficient C_damping (N·s/m)|Suspension Model|Suspension damping coefficient.|
+|`<a name="param-restLength"></a>restLength`|Rest Length (m)|Suspension Model|Suspension rest length.|
+|`<a name="param-maxEngineTorque"></a>maxEngineTorque`|Max Engine Torque (Nm)|Engine Configuration|Engine torque peak.|
+|`<a name="param-maxPower"></a>maxPower`|Max Power (W)|Engine Configuration|Engine maximum power.|
+|`<a name="param-idleRPM"></a>idleRPM`|Idle RPM|Engine Configuration|Engine idle speed.|
+|`<a name="param-redlineRPM"></a>redlineRPM`|Redline RPM|Engine Configuration|Maximum engine RPM.|
+|`<a name="param-engineBrakeTorque"></a>engineBrakeTorque`|Engine Brake Torque (Nm)|Engine Configuration|Engine braking torque.|
+|`<a name="param-fuelConsumptionRate"></a>fuelConsumptionRate`|Fuel Consumption Rate (kg/s)|Engine Configuration|Fuel used per second.|
+|`<a name="param-torqueFileName"></a>torqueFileName`|Torque File (Excel)|Engine Configuration|Excel torque curve file.|
+|`<a name="param-maxBrakingForce"></a>maxBrakingForce`|Max Braking Force (N)|Brake Configuration|Maximum wheel braking force.|
+|`<a name="param-brakingForce"></a>brakingForce`|Braking Force (N)|Brake Configuration|Constant braking force command.|
+|`<a name="param-brakeEfficiency"></a>brakeEfficiency`|Brake Efficiency (%)|Brake Configuration|Brake efficiency percentage.|
+|`<a name="param-brakeBias"></a>brakeBias`|Brake Bias (Front/Rear %)|Brake Configuration|Front/rear brake split.|
+|`<a name="param-brakeType"></a>brakeType`|Brake Type|Brake Configuration|Type of brake system.|
+|`<a name="param-maxClutchTorque"></a>maxClutchTorque`|Max Clutch Torque (Nm)|Clutch Configuration|Maximum clutch torque.|
+|`<a name="param-engagementSpeed"></a>engagementSpeed`|Clutch Engagement Speed (1/10 s)|Clutch Configuration|Clutch engagement time.|
+|`<a name="param-disengagementSpeed"></a>disengagementSpeed`|Clutch Disengagement Speed (1/10 s)|Clutch Configuration|Clutch disengagement time.|
+|`<a name="param-airDensity"></a>airDensity`|Air Density (kg/m³)|Aerodynamics|Air density for drag calculations.|
+|`<a name="param-dragCoeff"></a>dragCoeff`|Drag Coefficient|Aerodynamics|Vehicle drag coefficient.|
+|`<a name="param-windSpeed"></a>windSpeed`|Wind Speed (m/s)|Aerodynamics|Ambient wind speed.|
+|`<a name="param-windAngleDeg"></a>windAngleDeg`|Wind Angle (deg)|Aerodynamics|Wind angle relative to vehicle.|
 |`slopeAngle`|Slope Angle (degrees)|Road Conditions|Road slope angle.|
 |`roadFrictionCoefficient`|Road Friction Coefficient (μ)|Road Conditions|Road-tire friction coefficient.|
 |`roadSurfaceType`|Road Surface Type|Road Conditions|Type of road surface.|
 |`roadRoughness`|Road Roughness|Road Conditions|Roughness affecting vibrations.|
-|`maxGear`|Maximum Gear Number|Transmission Configuration|Number of transmission gears.|
-|`finalDriveRatio`|Final Drive Ratio|Transmission Configuration|Final drive ratio.|
-|`gearRatios`|Gear Ratios|Gear Ratios|Transmission gear ratios.|
-|`shiftUpSpeed`|Shift Up Speeds (m/s)|Transmission Configuration|Speeds at which to upshift.|
-|`shiftDownSpeed`|Shift Down Speeds (m/s)|Transmission Configuration|Speeds at which to downshift.|
-|`shiftDelay`|Shift Delay (s)|Transmission Configuration|Delay between gear changes.|
+|`<a name="param-maxGear"></a>maxGear`|Maximum Gear Number|Transmission Configuration|Number of transmission gears.|
+|`<a name="param-finalDriveRatio"></a>finalDriveRatio`|Final Drive Ratio|Transmission Configuration|Final drive ratio.|
+|`<a name="param-gearRatios"></a>gearRatios`|Gear Ratios|Gear Ratios|Transmission gear ratios.|
+|`<a name="param-shiftUpSpeed"></a>shiftUpSpeed`|Shift Up Speeds (m/s)|Transmission Configuration|Speeds at which to upshift.|
+|`<a name="param-shiftDownSpeed"></a>shiftDownSpeed`|Shift Down Speeds (m/s)|Transmission Configuration|Speeds at which to downshift.|
+|`<a name="param-shiftDelay"></a>shiftDelay`|Shift Delay (s)|Transmission Configuration|Delay between gear changes.|
 |`flatTireIndices`|Flat Tire Indices|Commands|Indices of tires starting flat.|
 |`steeringCommands`|Steering Commands|Commands|Scripted steering inputs.|
 |`accelerationCommands`|Acceleration Commands|Commands|Scripted acceleration inputs.|
@@ -643,10 +720,41 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`pressureMatrices`|Pressure Matrices|Pressure Matrices|Matrices of tire pressures.|
 |`maxAccelAtZeroSpeed`|Acceleration at 0 Speed (m/s²)|Control Limits|Accel limit at zero speed.|
 |`maxDecelAtZeroSpeed`|Deceleration at 0 Speed (m/s²)|Control Limits|Decel limit at zero speed.|
-|`pCx1..pKy3`|Pacejka Coefficients|Tire Model|Pacejka tire model coefficients.|
+|`<a name="param-pacejka"></a>pCx1..pKy3`|Pacejka Coefficients|Tire Model|Pacejka tire model coefficients.|
 |`spinnerConfigs`|Spinner Configs|Stiffness & Damping|Spinner graphics config.|
 |`mapCommands`|Map Commands|Mapping|Map creation string.|
 |`waypoints`|Waypoints|Path Follower|Explicit waypoint list.|
+
+### Parameter-Formula Links
+The table above shows the main GUI parameters. The formulas governing each
+component are described below and linked to their relevant settings:
+
+- [`tractorMass`](#param-tractorMass), [`trailerMass`](#param-trailerMass) → [Dynamics](#dynamics)
+- [`maxEngineTorque`](#param-maxEngineTorque), [`torqueFileName`](#param-torqueFileName) → [Engine](#engine)
+- [`maxClutchTorque`](#param-maxClutchTorque) → [Clutch](#clutch)
+- [`gearRatios`](#param-gearRatios), [`finalDriveRatio`](#param-finalDriveRatio) → [Transmission](#transmission)
+- [`maxBrakingForce`](#param-maxBrakingForce), [`brakeEfficiency`](#param-brakeEfficiency) → [BrakeSystem](#brakesystem)
+- [`K_spring`](#param-K_spring), [`C_damping`](#param-C_damping) → [LeafSpringSuspension](#leafspringsuspension)
+- [`pCx1..pKy3`](#param-pacejka) → [Pacejka96TireModel and PacejkaMagicFormula](#pacejka96tiremodel-and-pacejkamagicformula)
+- [`airDensity`](#param-airDensity), [`dragCoeff`](#param-dragCoeff) → [Aerodynamic drag](#dynamics)
+
+### Parameter → Variable Mapping
+The list below clarifies which variables in the equations are controlled by each
+parameter. Only the most relevant pairs are shown.
+
+| Parameter | Formula variable |
+|-----------|------------------|
+|`tractorMass`, `trailerMass`|$m$ in $\tfrac{du}{dt} = F_x/m$|
+|`tractorTireHeight`, `trailerTireHeight`|Wheel radius $R$ in $\kappa=(\omega R-v_x)/\max(v_x,0.1)$|
+|`maxEngineTorque`, `torqueFileName`|$T_e$ curve in $T_e=f(\omega_e)\theta_{th}$|
+|`maxClutchTorque`|$T_{\max}$ in $T_c=(1-e)\,T_{\max}$|
+|`gearRatios`, `finalDriveRatio`|$gearRatio$, $finalDrive$ in $T_w=T_c\,gearRatio\,finalDrive$|
+|`maxBrakingForce`, `brakeEfficiency`|$F_{brake}=u_b\,maxBrakingForce\,brakeEfficiency$|
+|`K_spring`, `C_damping`|$K$, $C$ in $F_s=-K\,\Delta x-C\,v$|
+|`pCx1..pKy3`|Pacejka $B,C,D,E$ coefficients|
+|`airDensity`, `dragCoeff`|$\rho$, $C_d$ in $F_d=0.5\,\rho\,C_d\,A\,v^2$|
+|`windSpeed`, `windAngleDeg`|Wind vector for relative speed in drag formula|
+|`maxDeltaDeg`|$\delta_{\max}$ limit in hitch model|
 
 ```mermaid
 flowchart LR
@@ -871,6 +979,8 @@ dynamics. Key formulas include:
     $F_d = 0.5 \times \rho \times C_d \times A \times v^2$
   - Net longitudinal force: $F_x = T_w/R_w - F_{brake} - F_d$ with
     $F_{brake} = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
+    
+Related parameters: [`airDensity`](#param-airDensity), [`dragCoeff`](#param-dragCoeff), [`windSpeed`](#param-windSpeed), [`windAngleDeg`](#param-windAngleDeg), [`tractorMass`](#param-tractorMass), [`trailerMass`](#param-trailerMass)
 - Translational kinetic energy: $E_{trans} = 0.5 \times m \times (u^2 + v^2)$
 - Rotational kinetic energy: $E_{rot} = 0.5 \times I \times \omega^2$
 - Yaw moment from tire forces: $M_z = l_f F_{yf} - l_r F_{yr}$
