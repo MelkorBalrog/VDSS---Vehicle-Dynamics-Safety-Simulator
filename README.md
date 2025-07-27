@@ -848,12 +848,120 @@ come from `Simulations/CollisionFrontEnd/Class8Truck_And_Sedan_CollisionFrontEnd
 |`includeTrailer`|`true`|
 |`tractorMass`|`9070` kg|
 |`trailerMass`|`7000` kg|
-|`tractorLength`|`6.5` m|
-|`trailerLength`|`12` m|
-|`maxEngineTorque`|`3000` Nm|
-|`maxGear`|`6`|
-|`finalDriveRatio`|`3.42`|
+|`initialVelocity`|`10` m/s|
+|`W_FrontLeft`|`669`|
+|`W_FrontRight`|`669`|
+|`W_RearLeft`|`446`|
+|`W_RearRight`|`446`|
+|`maxClutchTorque`|`3500` Nm|
+|`engagementSpeed`|`1`|
+|`disengagementSpeed`|`0.5`|
 |`torqueFileName`|`class8_truck_torque_curve.xlsx`|
+|`I_trailerMultiplier`|`1`|
+|`maxDeltaDeg`|`70`|
+|`dtMultiplier`|`0.5`|
+|`windowSize`|`1`|
+|`tractorLength`|`6.5` m|
+|`tractorWidth`|`2.5` m|
+|`tractorHeight`|`3.8` m|
+|`tractorCoGHeight`|`1.5` m|
+|`tractorWheelbase`|`4` m|
+|`tractorTrackWidth`|`2.1` m|
+|`tractorNumAxles`|`2`|
+|`tractorAxleSpacing`|`1.31` m|
+|`numTiresPerAxleTrailer`|`4`|
+|`numTiresPerAxleTractor`|`4`|
+|`trailerLength`|`12` m|
+|`trailerWidth`|`2.5` m|
+|`trailerHeight`|`4` m|
+|`trailerCoGHeight`|`1.5` m|
+|`trailerWheelbase`|`8` m|
+|`trailerTrackWidth`|`2.1` m|
+|`trailerNumAxles`|`2`|
+|`trailerAxleSpacing`|`1.31` m|
+|`trailerHitchDistance`|`1.31` m|
+|`tractorHitchDistance`|`4.5` m|
+|`steeringCommands`|`simval_(195)|ramp_-30(1)|keep_-30(0.8)|ramp_0(0.2)|keep_0(1)`|
+|`accelerationCommands`|`simval_(200)`|
+|`tirePressureCommands`|`pressure_(t:150-[tire:9,psi:70];[tire:2,psi:72];[tire:1,psi:7])`|
+|`maxEngineTorque`|`3000` Nm|
+|`maxPower`|`400000` W|
+|`idleRPM`|`600`|
+|`redlineRPM`|`2100`|
+|`engineBrakeTorque`|`1500`|
+|`fuelConsumptionRate`|`0.2`|
+|`maxSteeringAngleAtZeroSpeed`|`30`|
+|`steeringCurveFilePath`|`class8_truck_SteeringCurve.xlsx`|
+|`maxSteeringSpeed`|`30`|
+|`brakingForce`|`50000`|
+|`brakeEfficiency`|`85`|
+|`brakeBias`|`50`|
+|`brakeType`|`Air Disk`|
+|`maxBrakingForce`|`60000`|
+|`maxGear`|`6`|
+|`gearRatios`|`14.4,12.53,10.91,9.51,8.34,7.31,6.39,5.57,4.83,4.17,3.59,3.08,2.62,2.21,1.86,1.55,1.28,1.07`|
+|`finalDriveRatio`|`3.42`|
+|`shiftUpSpeed`|`3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37`|
+|`shiftDownSpeed`|`2.5,4.5,6.5,8.5,10.5,12.5,14.5,16.5,18.5,20.5,22.5,24.5,26.5,28.5,30.5,32.5,34.5,36.5`|
+|`shiftDelay`|`0.5`|
+|`minAccelAtMaxSpeed`|`1`|
+|`minDecelAtMaxSpeed`|`-1`|
+|`accelCurveFilePath`|`class8_truck_AccelCurve.xlsx`|
+|`decelCurveFilePath`|`class8_truck_DecelCurve.xlsx`|
+|`maxSpeedForAccelLimiting`|`30`|
+|`Kp`|`1`|
+|`Ki`|`0.5`|
+|`Kd`|`0.1`|
+|`enableSpeedController`|`1`|
+|`maxSpeed`|`25`|
+|`tractorTireHeight`|`1`|
+|`tractorTireWidth`|`0.3`|
+|`trailerTireHeight`|`1`|
+|`trailerTireWidth`|`0.3`|
+|`airDensity`|`1.225`|
+|`dragCoeff`|`0.8`|
+|`windSpeed`|`0`|
+|`windAngleDeg`|`45`|
+|`slopeAngle`|`0`|
+|`roadFrictionCoefficient`|`0.9`|
+|`roadSurfaceType`|`Dry Asphalt`|
+|`roadRoughness`|`0`|
+|`stiffnessX`|`10000`|
+|`stiffnessY`|`10000`|
+|`stiffnessZ`|`50000`|
+|`stiffnessRoll`|`5000`|
+|`stiffnessPitch`|`1000`|
+|`stiffnessYaw`|`2000`|
+|`dampingX`|`100000`|
+|`dampingY`|`100000`|
+|`dampingZ`|`50000`|
+|`dampingRoll`|`5000`|
+|`dampingPitch`|`1000`|
+|`dampingYaw`|`2000`|
+|`K_spring`|`30000`|
+|`C_damping`|`1500`|
+|`restLength`|`0.5`|
+|`pCx1`|`700000`|
+|`pDx1`|`700000`|
+|`pDx2`|`700000`|
+|`pEx1`|`10`|
+|`pEx2`|`0.1`|
+|`pEx3`|`0.05`|
+|`pEx4`|`0.03`|
+|`pKx1`|`60000`|
+|`pKx2`|`0.8`|
+|`pKx3`|`0.8`|
+|`pCy1`|`700000`|
+|`pDy1`|`700000`|
+|`pDy2`|`700000`|
+|`pEy1`|`10`|
+|`pEy2`|`0.1`|
+|`pEy3`|`0.05`|
+|`pEy4`|`0.03`|
+|`pKy1`|`60000`|
+|`pKy2`|`0.8`|
+|`pKy3`|`0.8`|
+|`pressureMatrices`|`780000,780000,785000,785000,790000,790000,795000,795000,800000,800000,805000,805000,810000,810000,815000,815000,820000,820000`|
 
 ### Passenger Vehicle Configuration Script
 The script `Scripts/passengerVehicleConfigWindow.m` creates a minimal dialog with
