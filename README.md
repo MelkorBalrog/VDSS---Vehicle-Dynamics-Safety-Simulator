@@ -8,7 +8,6 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 1. Open MATLAB and add this repository to the path with `addpath(genpath(pwd))`.
 2. Run `VDSS` to launch the graphical interface and start a default simulation.
 3. Use the menu options to load vehicle parameter files, start/stop runs and save results.
-4. The `Simulations` directory contains several ready-made examples. Open any MAT file there and click **Run** to reproduce the scenario.
 
 ## Table of Contents
 - [Directory Structure](#directory-structure)
@@ -26,7 +25,6 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
 - `Scripts/` – Utility scripts and MEX wrappers.
-- `Simulations/` – Example configurations and output data.
 - `Curves/` – Acceleration, braking and steering profiles used by the controllers.
 - `tests/` – Unit tests for core algorithms.
 - `codegen/` – Generated binaries when MEX wrappers are built.
@@ -40,8 +38,6 @@ and XML configuration files:
 - `Curves/*_AccelCurve.xlsx` – maximum acceleration limits.
 - `Curves/*_DecelCurve.xlsx` – braking deceleration limits.
 - `Curves/*_SteeringCurve.xlsx` – steering angle limits versus speed.
-- `Simulations/*.xml` – full vehicle setups including gear ratios and
-  powertrain options.
 
 Provide your own versions of these files to model different engines,
 brake systems, steering responses or transmissions.  The repository
@@ -53,7 +49,7 @@ includes sample spreadsheets illustrating the expected layout:
 | `Curves/sedan_AccelCurve.xlsx` | Max acceleration by speed (m/s vs m/s²). | `0\t3`, `1\t2.9`, `2\t2.8` |
 | `Curves/sedan_DecelCurve.xlsx` | Max braking decel by speed (m/s vs m/s²). | `0\t-2.4`, `1\t-2.2`, `2\t-2.0` |
 | `Curves/sedan_SteeringCurve.xlsx` | Steering limits (m/s vs deg). | `0\t35`, `5\t30`, `10\t25` |
-| `Simulations/CollisionFrontEnd/*.xml` | Full vehicle setup including gear ratios, masses and waypoints. | `<tractorMass>9070</tractorMass>` |
+| `Class8Truck_And_Sedan_CollisionFrontEnd.xml` | Sample heavy vehicle setup with gear ratios, masses and waypoints. | `<tractorMass>9070</tractorMass>` |
 
 ## Toolboxes
 ### Plotting
@@ -915,7 +911,7 @@ To build your own vehicle:
 
 ### Example Parameters: Class 8 Truck
 Below is a sample of the parameters used for the heavy truck preset. These values
-come from `Simulations/CollisionFrontEnd/Class8Truck_And_Sedan_CollisionFrontEnd.xml`.
+are taken from `Class8Truck_And_Sedan_CollisionFrontEnd.xml` shipped with the repository.
 
 | Parameter | Example Value |
 |-----------|---------------|
@@ -1074,7 +1070,7 @@ flowchart LR
 ```
 
 ## Getting Help
-Use `help <FunctionName>` inside MATLAB for detailed function comments. Example runs are provided in the `Simulations` folder. The `Scripts` directory contains helper utilities for building MEX files and running batch jobs.
+Use `help <FunctionName>` inside MATLAB for detailed function comments. The `Scripts` directory contains helper utilities for building MEX files and running batch jobs.
 
 ## License
 This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE) file for details.
