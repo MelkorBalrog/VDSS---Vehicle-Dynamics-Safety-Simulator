@@ -133,6 +133,9 @@ flowchart LR
   Pacejka -->|"F_x,F_y"| Chassis
   Suspension -->|"F_s"| Chassis
   Chassis -->|"u,v,r"| ForceCalc
+  Motion -->|"state"| HitchModel
+  ForceCalc -->|"pull"| HitchModel
+  HitchModel -->|"F_h"| ForceCalc
   ForceCalc -->|"a_x,a_y,M_z"| Dynamics
   Dynamics -->|"RK4"| Motion
 ```
@@ -1198,7 +1201,7 @@ flowchart LR
 
 ## Architecture Diagram
 ```
-[UIManager] <-> [SimManager] <-> [VehicleModel] <-> [Physics & Mechanics]
+[UIManager] <-> [SimManager] <-> [VehicleModel] <-> [HitchModel] <-> [Physics & Mechanics]
        |                         |
    [PlotManager]            [Map / Localizer]
 ```
