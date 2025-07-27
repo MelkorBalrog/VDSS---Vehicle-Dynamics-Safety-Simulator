@@ -18,6 +18,7 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Physics Models](#physics-models)
 - [Physics](#physics)
 - [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
+- [Collision Severity Determination](#collision-severity-determination)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -1083,7 +1084,7 @@ For each delta‑V value $\Delta v_{car}$ from the original table we first
 compute the kinetic energy it represents:
 
 $$
-E = \tfrac{1}{2} m_{car} \left(\tfrac{\Delta v_{car}}{3.6}\right)^2
+E = \tfrac{1}{2} m_{\mathrm{car}} \left(\tfrac{\Delta v_{\mathrm{car}}}{3.6}\right)^2
 $$
 
 where $m_{car}$ is the maximum passenger‑vehicle mass in J2980
@@ -1091,12 +1092,12 @@ where $m_{car}$ is the maximum passenger‑vehicle mass in J2980
 $m_{hv}$ the same energy is used:
 
 $$
-\Delta v_{hv} = 3.6\sqrt{\tfrac{2E}{m_{hv}}}
+\Delta v_{\mathrm{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\mathrm{hv}}}}
 $$
 
 This simplifies to a scaling factor
 $$
-\Delta v_{hv} = \Delta v_{car} \sqrt{\tfrac{m_{car}}{m_{hv}}}
+\Delta v_{\mathrm{hv}} = \Delta v_{\mathrm{car}} \sqrt{\tfrac{m_{\mathrm{car}}}{m_{\mathrm{hv}}}}
 $$
 
 ### Calculation Flow
@@ -1122,3 +1123,25 @@ The delta‑V thresholds for each collision type become:
 
 These values allow the J2980 categories to be applied to heavy vehicles while
 preserving the equivalent kinetic energy threshold.
+
+## Collision Severity Determination
+VDSS evaluates collisions by computing the change in velocity for each vehicle
+at impact. Assuming an elastic collision between masses $m_1$ and $m_2$ with
+relative speed $v_{\mathrm{rel}}$ and impact angle $\theta$, the post-impact
+delta-V for vehicle&nbsp;1 is
+
+$$
+\Delta v_{\mathrm{sim}} = \frac{2 m_2}{m_1 + m_2} \, v_{\mathrm{rel}} \cos \theta.
+$$
+
+The angle $\theta$ is derived from the contact normal in the dynamics engine.
+An occupant severity index follows the exponential relation proposed by
+H.~Smith:
+
+$$
+\mathrm{OSI} = 1 - e^{-v_{\mathrm{rel}}/v_0},
+$$
+
+where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
+simulated $\Delta v_{\mathrm{sim}}$ is compared against the heavy-vehicle
+thresholds in the extended J2980 table to classify the crash as S0–S3.
