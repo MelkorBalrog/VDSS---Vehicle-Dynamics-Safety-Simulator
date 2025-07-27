@@ -221,7 +221,7 @@ This force is then split between the axles according to the brake bias.
 ###### LeafSpringSuspension
 ```mermaid
 flowchart LR
-  dx(["\Delta x"])
+  dx(["Δx"])
   vel(["v"])
   dx --> Suspension
   vel --> Suspension
@@ -390,15 +390,15 @@ flowchart LR
   difference between desired and filtered speed.  Cornering speed reduction is
   applied if the turn radius is small.
 * **ACC Controller** modifies the PID output when approaching a curve.  When the
-  distance to a curve is below \(v \times t_{lookahead}\) the commanded speed is
-  reduced by a factor and jerk is limited to \(0.7 g\).
+  distance to a curve is below $v \times t_{lookahead}$ the commanded speed is
+  reduced by a factor and jerk is limited to $0.7 g$.
 * **Pure Pursuit Path Follower** predicts a lookahead pose using
-  \(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
-  \(\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]\). It searches the
+  $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
+  $\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]$. It searches the
   path ahead for a target point, computes
-  \(\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}\)
+  $\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}$
   and outputs
-  \(\delta_{pp} = \mathrm{atan2}(2L \sin\alpha, d_l)\). `planPathWithPredictions`
+  $\delta_{pp} = \mathrm{atan2}(2L \sin\alpha, d_l)$. `planPathWithPredictions`
   refines the trajectory and the result passes through Gaussian and low\-pass
   filters to remove zig\-zag oscillations.
 * **Longitudinal Limiter** reads calibration curves from Excel to cap allowable
@@ -432,12 +432,12 @@ flowchart TD
 ```
 
 Here
-\(\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p\) and
-\(\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]\) represent the
-predicted heading and position after time \(t_p\). From the predicted position
+$\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
+$\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]$ represent the
+predicted heading and position after time $t_p$. From the predicted position
 the controller computes
-\(\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}\)
-and distance \(d_l\) to the target waypoint. `planPathWithPredictions` then
+$\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}$
+and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
 
