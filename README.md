@@ -1,4 +1,5 @@
 # VDSS - Vehicle Dynamics Safety Simulator
+Author: Miguel Marina <karel.capek.robotics@gmail.com> - [LinkedIn](https://www.linkedin.com/in/progman32/)
 
 ## Overview
 VDSS provides a MATLAB based environment for simulating vehicle dynamics and safety scenarios. The top level `VDSS` function sets up the user interface, loads vehicle configurations and executes simulations through the `SimManager` class. The design follows a modular approach where each toolbox encapsulates a specific subsystem (e.g., controls, physics, plotting). Users can modify parameters or replace components without rewriting the entire simulator.
@@ -493,6 +494,68 @@ flowchart LR
   Gauss --> LowPass[Low-pass]
   LowPass -->|"\delta"| Ackermann
 ```
+
+###### Planned Path
+*Outputs*: waypoints $(x_i, y_i)$ describing the reference trajectory.
+
+###### Lookahead Search
+```mermaid
+flowchart LR
+  Vehicle[p, θ] --> Lookahead
+  path[Path] --> Lookahead
+  Lookahead --> alpha(["α"])
+  Lookahead --> d(["d"])
+```
+*Inputs*: current pose $(p,\theta)$ and planned path.
+*Outputs*: heading error $\alpha$ and lookahead distance $d$.
+
+The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
+$\alpha = \mathrm{atan2}(y_l - p_y, x_l - p_x) - \theta$.
+
+###### Compute Curvature
+```mermaid
+flowchart LR
+  alpha_d(["α,d"]) --> Curv
+  Curv --> delta_pp(["δ_{pp}"])
+```
+*Inputs*: heading error $\alpha$, distance $d$, wheelbase $L$.
+*Output*: raw steering angle $\delta_{pp}$.
+
+$$\delta_{pp} = \tan^{-1}\frac{2L \sin \alpha}{d}.$$
+
+###### Gaussian Filter
+```mermaid
+flowchart LR
+  delta_pp(["δ_{pp}"]) --> Gauss
+  Gauss --> delta_g(["δ_g"])
+```
+*Input*: raw steering $\delta_{pp}$.
+*Output*: smoothed value $\delta_g$.
+
+$$\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i].$$
+
+###### Low-pass Filter
+```mermaid
+flowchart LR
+  delta_g(["δ_g"]) --> LowPass
+  LowPass --> delta(["δ"])
+```
+*Input*: smoothed command $\delta_g$.
+*Output*: filtered steering angle $\delta$.
+
+$$\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1].$$
+
+###### Ackermann Steering
+```mermaid
+flowchart LR
+  delta(["δ"]) --> Ackermann
+  Ackermann --> delta_i(["δ_i"])
+  Ackermann --> delta_o(["δ_o"])
+```
+*Input*: commanded steering angle $\delta$.
+*Outputs*: inner and outer wheel angles $\delta_i$, $\delta_o$.
+
+The geometry obeys $\tan \delta_{i,o} = \tfrac{L}{R \mp W/2}$, converting the steering angle to wheel angles.
 
 #### Control Limiters
 Both steering and longitudinal actuation are limited according to speed
