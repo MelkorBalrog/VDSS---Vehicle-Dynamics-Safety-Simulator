@@ -657,7 +657,7 @@ flowchart LR
 
 The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
 \[
-\alpha = \operatorname{atan2}(y_l - p_y,\; x_l - p_x) - \theta.
+\alpha = \operatorname{atan2}(y_l - p_y,\; x_l - p_x) - \theta
 \]
 
 ###### Compute Curvature
@@ -1375,7 +1375,7 @@ relative speed $v_{\mathrm{rel}}$ and impact angle $\theta$, the post-impact
 delta-V for vehicle&nbsp;1 is
 
 \[
-\Delta v_{\mathrm{sim}} = \frac{2 m_2}{m_1 + m_2} \, v_{\mathrm{rel}} \cos \theta.
+\Delta v_{\mathrm{sim}} = \frac{2 m_2}{m_1 + m_2} \, v_{\mathrm{rel}} \cos \theta
 \]
 
 The angle $\theta$ is derived from the contact normal in the dynamics engine.
