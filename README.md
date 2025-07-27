@@ -8,10 +8,10 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 1. Open MATLAB and add this repository to the path with `addpath(genpath(pwd))`.
 2. Run `VDSS` to launch the graphical interface and start a default simulation.
 3. Use the menu options to load vehicle parameter files, start/stop runs and save results.
-4. The `Simulations` directory contains several ready-made examples. Open any MAT file there and click **Run** to reproduce the scenario.
 
 ## Table of Contents
 - [Directory Structure](#directory-structure)
+- [Configuration Files](#configuration-files)
 - [Toolboxes](#toolboxes)
 - [Mechanics](#mechanics)
 - [Mechanical Model Blocks](#mechanical-model-blocks)
@@ -23,11 +23,32 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
 - `Scripts/` – Utility scripts and MEX wrappers.
-- `Simulations/` – Example configurations and output data.
 - `Curves/` – Acceleration, braking and steering profiles used by the controllers.
 - `tests/` – Unit tests for core algorithms.
 - `codegen/` – Generated binaries when MEX wrappers are built.
 - `VDSS.m` – Entry point that constructs the GUI and orchestrates components.
+
+## Configuration Files
+Vehicle behaviour is largely defined through user editable spreadsheets
+and XML configuration files:
+
+- `Curves/*_torque_curve.xlsx` – engine torque maps used by `Engine`.
+- `Curves/*_AccelCurve.xlsx` – maximum acceleration limits.
+- `Curves/*_DecelCurve.xlsx` – braking deceleration limits.
+- `Curves/*_SteeringCurve.xlsx` – steering angle limits versus speed.
+
+Provide your own versions of these files to model different engines,
+brake systems, steering responses or transmissions.  The repository
+includes sample spreadsheets illustrating the expected layout:
+
+| File | Purpose | Example entries |
+| ---- | ------- | --------------- |
+| `Curves/sedan_torque_curve.xlsx` | Engine torque map (RPM vs Nm). | `800\t80`, `1000\t100`, `1200\t120` |
+| `Curves/sedan_AccelCurve.xlsx` | Max acceleration by speed (m/s vs m/s²). | `0\t3`, `1\t2.9`, `2\t2.8` |
+| `Curves/sedan_DecelCurve.xlsx` | Max braking decel by speed (m/s vs m/s²). | `0\t-2.4`, `1\t-2.2`, `2\t-2.0` |
+| `Curves/sedan_SteeringCurve.xlsx` | Steering limits (m/s vs deg). | `0\t35`, `5\t30`, `10\t25` |
+| `Class8Truck_And_Sedan_CollisionFrontEnd.xml` | Sample heavy vehicle setup with gear ratios, masses and waypoints. | `<tractorMass>9070</tractorMass>` |
+
 
 ## Toolboxes
 ### Plotting
@@ -76,7 +97,12 @@ The main mechanical components behave like interconnected black boxes with clear
 inputs and outputs. Their relationships can be visualized using Mermaid:
 ```mermaid
 flowchart LR
+  ConfigFiles["User Files"]
   Throttle -->|"θ_th"| Engine
+  ConfigFiles --> Engine
+  ConfigFiles --> Transmission
+  ConfigFiles --> BrakeSystem
+  ConfigFiles --> Ackermann
   Engine -->|"T_e, ω_e"| Clutch
   Wheels -->|"ω_w"| Clutch
   Clutch -->|"T_c"| Transmission
@@ -328,8 +354,12 @@ subsystems for different motion components.
 #### Longitudinal Drive Chain
 ```mermaid
 flowchart LR
+  ConfigFiles["User Files"]
   throttleCmd[Throttle Cmd] --> Throttle
   Throttle --> Engine
+  ConfigFiles --> Engine
+  ConfigFiles --> Transmission
+  ConfigFiles --> BrakeSystem
   Engine --> Transmission
   Transmission --> Differential
   Differential --> Wheels
@@ -343,7 +373,9 @@ flowchart LR
 #### Steering and Hitch Chain
 ```mermaid
 flowchart LR
+  ConfigFiles["User Files"]
   steerCmd[Steering Cmd] --> Ackermann
+  ConfigFiles --> Ackermann
   Ackermann --> Wheels
   Wheels --> TireModel[Pacejka Tire Model]
   HitchModel --> ForceCalc
@@ -362,6 +394,9 @@ flowchart LR
   subgraph Simulation
     SimManager --> Controllers
   end
+  subgraph ConfigFiles
+    cfg[User Files]
+  end
   subgraph Driver Inputs
     th[Throttle Cmd]
     br[Brake Cmd]
@@ -372,14 +407,18 @@ flowchart LR
   Controllers --> st
   th -->|"u_th"| Throttle
   Throttle -->|"θ_th"| Engine
+  cfg --> Engine
   Engine -->|"T_e, ω_e"| Clutch
   Wheels -->|"ω_w"| Clutch
   Clutch -->|"T_c"| Transmission
+  cfg --> Transmission
   Transmission -->|"T_w"| Differential
   Differential -->|"T_axle"| Wheels
   br -->|"u_b"| BrakeSystem
+  cfg --> BrakeSystem
   BrakeSystem -->|"T_b"| Wheels
   st -->|"δ"| Ackermann
+  cfg --> Ackermann
   Ackermann -->|"δ_i, δ_o"| Wheels
   Wheels -->|"κ, α"| Pacejka[Pacejka Tire Model]
   Pacejka -->|"F_x,F_y"| ForceCalc
@@ -433,11 +472,19 @@ flowchart LR
 * **Pure Pursuit Path Follower** predicts a lookahead pose using
   $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
   $\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]$. It searches the
-  path ahead for a target point, computes
-  $\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}$
-  and outputs
-  $\delta_{pp} = \mathrm{atan2}(2L \sin\alpha, d_l)$. `planPathWithPredictions`
-  refines the trajectory and the result passes through Gaussian and low\-pass
+  path ahead for a target point.  The heading error is
+
+  $$
+  \alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+  $$
+
+  and the raw steering command becomes
+
+  $$
+  \delta_{pp} = \operatorname{atan2}(2L \sin \alpha,\; d_l).
+  $$
+
+  `planPathWithPredictions` refines the trajectory and the result passes through Gaussian and low\-pass
   filters to remove zig\-zag oscillations.
 * **Longitudinal Limiter** reads calibration curves from Excel to cap allowable
   acceleration and braking as functions of speed.
@@ -474,7 +521,9 @@ $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
 $\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]$ represent the
 predicted heading and position after time $t_p$. From the predicted position
 the controller computes
-$\alpha = \mathrm{atan2}(y_l - \hat{p}_y, x_l - \hat{p}_x) - \hat{\theta}$
+$$
+\alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
+$$
 and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
@@ -546,7 +595,9 @@ flowchart LR
 *Outputs*: heading error $\alpha$ and lookahead distance $d$.
 
 The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
-$\alpha = \mathrm{atan2}(y_l - p_y, x_l - p_x) - \theta$.
+$$
+\alpha = \operatorname{atan2}(y_l - p_y,\; x_l - p_x) - \theta.
+$$
 
 ###### Compute Curvature
 ```mermaid
@@ -834,14 +885,15 @@ To build your own vehicle:
 
 1. Start VDSS and open the **Basic Configuration** tab.
 2. Pick either preset as a starting point or enter your own masses and geometry.
-3. Load engine torque and limiter curves from the provided Excel files.
+3. Load engine torque and limiter curves as well as braking and steering limits
+   from your Excel configuration files.
 4. Adjust controller gains in the **PID Controller** tab.
 5. Specify lookahead distance and waypoints under **Path Follower**.
 6. Save the resulting parameter set for future runs.
 
 ### Example Parameters: Class 8 Truck
 Below is a sample of the parameters used for the heavy truck preset. These values
-come from `Simulations/CollisionFrontEnd/Class8Truck_And_Sedan_CollisionFrontEnd.xml`.
+are taken from `Class8Truck_And_Sedan_CollisionFrontEnd.xml` shipped with the repository.
 
 | Parameter | Example Value |
 |-----------|---------------|
@@ -1000,7 +1052,7 @@ flowchart LR
 ```
 
 ## Getting Help
-Use `help <FunctionName>` inside MATLAB for detailed function comments. Example runs are provided in the `Simulations` folder. The `Scripts` directory contains helper utilities for building MEX files and running batch jobs.
+Use `help <FunctionName>` inside MATLAB for detailed function comments. The `Scripts` directory contains helper utilities for building MEX files and running batch jobs.
 
 ## License
 This project is licensed under the GNU General Public License v3. See the [LICENSE](LICENSE) file for details.
@@ -1038,11 +1090,11 @@ for each simulation step is summarized below.
    - Slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
    - Pacejka '96 formula gives the tire forces:
    $$
-   \begin{aligned}
-   F_x &= D_x \sin\bigl(C_x \tan^{-1}(B_x \kappa - E_x (B_x \kappa - \tan^{-1}(B_x \kappa)))\bigr),\\
-   F_y &= D_y \sin\bigl(C_y \tan^{-1}(B_y \alpha - E_y (B_y \alpha - \tan^{-1}(B_y \alpha)))\bigr).
-   \end{aligned}
-   $$
+  \begin{aligned}
+  F_x &= D_x \sin\bigl(C_x \operatorname{atan}(B_x \kappa - E_x (B_x \kappa - \operatorname{atan}(B_x \kappa)))\bigr),\\
+  F_y &= D_y \sin\bigl(C_y \operatorname{atan}(B_y \alpha - E_y (B_y \alpha - \operatorname{atan}(B_y \alpha)))\bigr).
+  \end{aligned}
+  $$
 
 2. **Force Summation**
     - Aerodynamic drag: $F_d = 0.5 \times \rho \times C_d \times A \times v^2$
