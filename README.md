@@ -637,13 +637,13 @@ is loaded into the relevant mechanical block or controller at simulation start.
 | Parameter | GUI Label | Tab | Description |
 |-----------|-----------|-----|-------------|
 |`includeTrailer`|Include Trailer|Basic Configuration|Attach trailer; enables hitch dynamics.|
-|`<a name="param-tractorMass"></a>tractorMass`|Tractor Mass (kg)|Basic Configuration|Mass of tractor affecting inertia.|
-|`<a name="param-trailerMass"></a>trailerMass`|Trailer Box Weight (kg)|Basic Configuration|Trailer mass used when trailer enabled.|
+|<a name="param-tractorMass"></a>`tractorMass`|Tractor Mass (kg)|Basic Configuration|Mass of tractor affecting inertia.|
+|<a name="param-trailerMass"></a>`trailerMass`|Trailer Box Weight (kg)|Basic Configuration|Trailer mass used when trailer enabled.|
 |`enableLogging`|Enable Logging|Basic Configuration|Record simulation data to file.|
 |`initialVelocity`|Initial Velocity (m/s)|Basic Configuration|Starting speed of vehicle.|
 |`vehicleType`|Vehicle Type|Basic Configuration|Preset geometry and tuning.|
-|`<a name="param-I_trailerMultiplier"></a>I_trailerMultiplier`|Trailer Inertia Multiplier|Advanced Configuration|Scaling factor for trailer inertia.|
-|`<a name="param-maxDeltaDeg"></a>maxDeltaDeg`|Max Articulation Angle (deg)|Advanced Configuration|Maximum articulation angle.|
+|<a name="param-I_trailerMultiplier"></a>`I_trailerMultiplier`|Trailer Inertia Multiplier|Advanced Configuration|Scaling factor for trailer inertia.|
+|<a name="param-maxDeltaDeg"></a>`maxDeltaDeg`|Max Articulation Angle (deg)|Advanced Configuration|Maximum articulation angle.|
 |`dtMultiplier`|Time Step Multiplier|Advanced Configuration|Integration time step multiplier.|
 |`windowSize`|Signal Smoothing Window Size (sec)|Advanced Configuration|Window size for smoothing filters.|
 |`steeringCurveFilePath`|Steering Curve File|Control Limits|Excel file defining steering limits.|
@@ -681,16 +681,16 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`trailerWheelbase`|Wheelbase (m)|Trailer Parameters|Trailer wheelbase.|
 |`trailerTrackWidth`|Track Width (m)|Trailer Parameters|Trailer track width.|
 |`trailerAxleSpacing`|Axle Spacing (m)|Trailer Parameters|Spacing between trailer axles.|
-|`<a name="param-trailerHitchDistance"></a>trailerHitchDistance`|Trailer Hitch Distance (m)|Trailer Parameters|Distance from tractor hitch to trailer.|
-|`<a name="param-tractorHitchDistance"></a>tractorHitchDistance`|Tractor Hitch Distance (m)|Trailer Parameters|Distance from rear axle to hitch.|
+|<a name="param-trailerHitchDistance"></a>`trailerHitchDistance`|Trailer Hitch Distance (m)|Trailer Parameters|Distance from tractor hitch to trailer.|
+|<a name="param-tractorHitchDistance"></a>`tractorHitchDistance`|Tractor Hitch Distance (m)|Trailer Parameters|Distance from rear axle to hitch.|
 |`numTiresPerAxleTrailer`|Number of Tires per Axle on Trailer|Trailer Parameters|Tires per trailer axle.|
 |`trailerNumBoxes`|Num Trailer Boxes|Trailer Parameters|Number of cargo boxes.|
 |`trailerAxlesPerBox`|Axles per Box (comma-separated)|Trailer Parameters|Axles per cargo box.|
 |`trailerBoxSpacing`|Box Spacing (m)|Trailer Parameters|Spacing between boxes.|
-|`<a name="param-tractorTireHeight"></a>tractorTireHeight`|Tractor Tire Height (m)|Tires Configuration|Tractor tire outer diameter.|
-|`<a name="param-tractorTireWidth"></a>tractorTireWidth`|Tractor Tire Width (m)|Tires Configuration|Tractor tire width.|
-|`<a name="param-trailerTireHeight"></a>trailerTireHeight`|Trailer Tire Height (m)|Tires Configuration|Trailer tire outer diameter.|
-|`<a name="param-trailerTireWidth"></a>trailerTireWidth`|Trailer Tire Width (m)|Tires Configuration|Trailer tire width.|
+|<a name="param-tractorTireHeight"></a>`tractorTireHeight`|Tractor Tire Height (m)|Tires Configuration|Tractor tire outer diameter.|
+|<a name="param-tractorTireWidth"></a>`tractorTireWidth`|Tractor Tire Width (m)|Tires Configuration|Tractor tire width.|
+|<a name="param-trailerTireHeight"></a>`trailerTireHeight`|Trailer Tire Height (m)|Tires Configuration|Trailer tire outer diameter.|
+|<a name="param-trailerTireWidth"></a>`trailerTireWidth`|Trailer Tire Width (m)|Tires Configuration|Trailer tire width.|
 |`stiffnessX`|Stiffness X (N/m)|Stiffness & Damping|Chassis spring stiffness in X.|
 |`stiffnessY`|Stiffness Y (N/m)|Stiffness & Damping|Chassis spring stiffness in Y.|
 |`stiffnessZ`|Stiffness Z (N/m)|Stiffness & Damping|Chassis spring stiffness in Z.|
@@ -703,38 +703,38 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`dampingRoll`|Damping Roll (N·m·s/rad)|Stiffness & Damping|Roll damping of chassis.|
 |`dampingPitch`|Damping Pitch (N·m·s/rad)|Stiffness & Damping|Pitch damping of chassis.|
 |`dampingYaw`|Damping Yaw (N·m·s/rad)|Stiffness & Damping|Yaw damping of chassis.|
-|`<a name="param-K_spring"></a>K_spring`|Spring Stiffness K_spring (N/m)|Suspension Model|Suspension spring constant.|
-|`<a name="param-C_damping"></a>C_damping`|Damping Coefficient C_damping (N·s/m)|Suspension Model|Suspension damping coefficient.|
-|`<a name="param-restLength"></a>restLength`|Rest Length (m)|Suspension Model|Suspension rest length.|
-|`<a name="param-maxEngineTorque"></a>maxEngineTorque`|Max Engine Torque (Nm)|Engine Configuration|Engine torque peak.|
-|`<a name="param-maxPower"></a>maxPower`|Max Power (W)|Engine Configuration|Engine maximum power.|
-|`<a name="param-idleRPM"></a>idleRPM`|Idle RPM|Engine Configuration|Engine idle speed.|
-|`<a name="param-redlineRPM"></a>redlineRPM`|Redline RPM|Engine Configuration|Maximum engine RPM.|
-|`<a name="param-engineBrakeTorque"></a>engineBrakeTorque`|Engine Brake Torque (Nm)|Engine Configuration|Engine braking torque.|
-|`<a name="param-fuelConsumptionRate"></a>fuelConsumptionRate`|Fuel Consumption Rate (kg/s)|Engine Configuration|Fuel used per second.|
-|`<a name="param-torqueFileName"></a>torqueFileName`|Torque File (Excel)|Engine Configuration|Excel torque curve file.|
-|`<a name="param-maxBrakingForce"></a>maxBrakingForce`|Max Braking Force (N)|Brake Configuration|Maximum wheel braking force.|
-|`<a name="param-brakingForce"></a>brakingForce`|Braking Force (N)|Brake Configuration|Constant braking force command.|
-|`<a name="param-brakeEfficiency"></a>brakeEfficiency`|Brake Efficiency (%)|Brake Configuration|Brake efficiency percentage.|
-|`<a name="param-brakeBias"></a>brakeBias`|Brake Bias (Front/Rear %)|Brake Configuration|Front/rear brake split.|
-|`<a name="param-brakeType"></a>brakeType`|Brake Type|Brake Configuration|Type of brake system.|
-|`<a name="param-maxClutchTorque"></a>maxClutchTorque`|Max Clutch Torque (Nm)|Clutch Configuration|Maximum clutch torque.|
-|`<a name="param-engagementSpeed"></a>engagementSpeed`|Clutch Engagement Speed (1/10 s)|Clutch Configuration|Clutch engagement time.|
-|`<a name="param-disengagementSpeed"></a>disengagementSpeed`|Clutch Disengagement Speed (1/10 s)|Clutch Configuration|Clutch disengagement time.|
-|`<a name="param-airDensity"></a>airDensity`|Air Density (kg/m³)|Aerodynamics|Air density for drag calculations.|
-|`<a name="param-dragCoeff"></a>dragCoeff`|Drag Coefficient|Aerodynamics|Vehicle drag coefficient.|
-|`<a name="param-windSpeed"></a>windSpeed`|Wind Speed (m/s)|Aerodynamics|Ambient wind speed.|
-|`<a name="param-windAngleDeg"></a>windAngleDeg`|Wind Angle (deg)|Aerodynamics|Wind angle relative to vehicle.|
+|<a name="param-K_spring"></a>`K_spring`|Spring Stiffness K_spring (N/m)|Suspension Model|Suspension spring constant.|
+|<a name="param-C_damping"></a>`C_damping`|Damping Coefficient C_damping (N·s/m)|Suspension Model|Suspension damping coefficient.|
+|<a name="param-restLength"></a>`restLength`|Rest Length (m)|Suspension Model|Suspension rest length.|
+|<a name="param-maxEngineTorque"></a>`maxEngineTorque`|Max Engine Torque (Nm)|Engine Configuration|Engine torque peak.|
+|<a name="param-maxPower"></a>`maxPower`|Max Power (W)|Engine Configuration|Engine maximum power.|
+|<a name="param-idleRPM"></a>`idleRPM`|Idle RPM|Engine Configuration|Engine idle speed.|
+|<a name="param-redlineRPM"></a>`redlineRPM`|Redline RPM|Engine Configuration|Maximum engine RPM.|
+|<a name="param-engineBrakeTorque"></a>`engineBrakeTorque`|Engine Brake Torque (Nm)|Engine Configuration|Engine braking torque.|
+|<a name="param-fuelConsumptionRate"></a>`fuelConsumptionRate`|Fuel Consumption Rate (kg/s)|Engine Configuration|Fuel used per second.|
+|<a name="param-torqueFileName"></a>`torqueFileName`|Torque File (Excel)|Engine Configuration|Excel torque curve file.|
+|<a name="param-maxBrakingForce"></a>`maxBrakingForce`|Max Braking Force (N)|Brake Configuration|Maximum wheel braking force.|
+|<a name="param-brakingForce"></a>`brakingForce`|Braking Force (N)|Brake Configuration|Constant braking force command.|
+|<a name="param-brakeEfficiency"></a>`brakeEfficiency`|Brake Efficiency (%)|Brake Configuration|Brake efficiency percentage.|
+|<a name="param-brakeBias"></a>`brakeBias`|Brake Bias (Front/Rear %)|Brake Configuration|Front/rear brake split.|
+|<a name="param-brakeType"></a>`brakeType`|Brake Type|Brake Configuration|Type of brake system.|
+|<a name="param-maxClutchTorque"></a>`maxClutchTorque`|Max Clutch Torque (Nm)|Clutch Configuration|Maximum clutch torque.|
+|<a name="param-engagementSpeed"></a>`engagementSpeed`|Clutch Engagement Speed (1/10 s)|Clutch Configuration|Clutch engagement time.|
+|<a name="param-disengagementSpeed"></a>`disengagementSpeed`|Clutch Disengagement Speed (1/10 s)|Clutch Configuration|Clutch disengagement time.|
+|<a name="param-airDensity"></a>`airDensity`|Air Density (kg/m³)|Aerodynamics|Air density for drag calculations.|
+|<a name="param-dragCoeff"></a>`dragCoeff`|Drag Coefficient|Aerodynamics|Vehicle drag coefficient.|
+|<a name="param-windSpeed"></a>`windSpeed`|Wind Speed (m/s)|Aerodynamics|Ambient wind speed.|
+|<a name="param-windAngleDeg"></a>`windAngleDeg`|Wind Angle (deg)|Aerodynamics|Wind angle relative to vehicle.|
 |`slopeAngle`|Slope Angle (degrees)|Road Conditions|Road slope angle.|
 |`roadFrictionCoefficient`|Road Friction Coefficient (μ)|Road Conditions|Road-tire friction coefficient.|
 |`roadSurfaceType`|Road Surface Type|Road Conditions|Type of road surface.|
 |`roadRoughness`|Road Roughness|Road Conditions|Roughness affecting vibrations.|
-|`<a name="param-maxGear"></a>maxGear`|Maximum Gear Number|Transmission Configuration|Number of transmission gears.|
-|`<a name="param-finalDriveRatio"></a>finalDriveRatio`|Final Drive Ratio|Transmission Configuration|Final drive ratio.|
-|`<a name="param-gearRatios"></a>gearRatios`|Gear Ratios|Gear Ratios|Transmission gear ratios.|
-|`<a name="param-shiftUpSpeed"></a>shiftUpSpeed`|Shift Up Speeds (m/s)|Transmission Configuration|Speeds at which to upshift.|
-|`<a name="param-shiftDownSpeed"></a>shiftDownSpeed`|Shift Down Speeds (m/s)|Transmission Configuration|Speeds at which to downshift.|
-|`<a name="param-shiftDelay"></a>shiftDelay`|Shift Delay (s)|Transmission Configuration|Delay between gear changes.|
+|<a name="param-maxGear"></a>`maxGear`|Maximum Gear Number|Transmission Configuration|Number of transmission gears.|
+|<a name="param-finalDriveRatio"></a>`finalDriveRatio`|Final Drive Ratio|Transmission Configuration|Final drive ratio.|
+|<a name="param-gearRatios"></a>`gearRatios`|Gear Ratios|Gear Ratios|Transmission gear ratios.|
+|<a name="param-shiftUpSpeed"></a>`shiftUpSpeed`|Shift Up Speeds (m/s)|Transmission Configuration|Speeds at which to upshift.|
+|<a name="param-shiftDownSpeed"></a>`shiftDownSpeed`|Shift Down Speeds (m/s)|Transmission Configuration|Speeds at which to downshift.|
+|<a name="param-shiftDelay"></a>`shiftDelay`|Shift Delay (s)|Transmission Configuration|Delay between gear changes.|
 |`flatTireIndices`|Flat Tire Indices|Commands|Indices of tires starting flat.|
 |`steeringCommands`|Steering Commands|Commands|Scripted steering inputs.|
 |`accelerationCommands`|Acceleration Commands|Commands|Scripted acceleration inputs.|
@@ -742,7 +742,7 @@ is loaded into the relevant mechanical block or controller at simulation start.
 |`pressureMatrices`|Pressure Matrices|Pressure Matrices|Matrices of tire pressures.|
 |`maxAccelAtZeroSpeed`|Acceleration at 0 Speed (m/s²)|Control Limits|Accel limit at zero speed.|
 |`maxDecelAtZeroSpeed`|Deceleration at 0 Speed (m/s²)|Control Limits|Decel limit at zero speed.|
-|`<a name="param-pacejka"></a>pCx1..pKy3`|Pacejka Coefficients|Tire Model|Pacejka tire model coefficients.|
+|<a name="param-pacejka"></a>`pCx1..pKy3`|Pacejka Coefficients|Tire Model|Pacejka tire model coefficients.|
 |`spinnerConfigs`|Spinner Configs|Stiffness & Damping|Spinner graphics config.|
 |`mapCommands`|Map Commands|Mapping|Map creation string.|
 |`waypoints`|Waypoints|Path Follower|Explicit waypoint list.|
