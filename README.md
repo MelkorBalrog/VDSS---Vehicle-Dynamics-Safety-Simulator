@@ -134,8 +134,9 @@ Each mechanical block acts as a black box with defined inputs and outputs:
 - **Pacejka96TireModel** – inputs: slip angle $\alpha$, slip ratio $\kappa$
   and normal load $F_z$; outputs lateral and longitudinal forces using the
   formulas above.
-- **HitchModel** – inputs: tractor and trailer states; outputs hitch forces,
-  moments and articulation angle integrated with RK4.
+  - **HitchModel** – inputs: tractor and trailer state structures containing
+    position, yaw orientation and body-frame velocities; outputs hitch forces,
+    moments and the articulated angle integrated with RK4.
 
 ##### Detailed Block Descriptions
 Each mechanical block can be viewed as a self contained subsystem described by
@@ -297,6 +298,26 @@ $M_h = k_h \times \delta + c_h \times \dot\delta$
 where $\delta$ is the articulation angle between tractor and trailer.
 `HitchModel` integrates this angle with the same Runge\--Kutta 4 scheme used for
 the trailer yaw rate.
+
+###### Vehicle State Structure
+The term *vehicle state* refers to a structure created by `DynamicsUpdater`
+and passed to `ForceCalculator`, `HitchModel` and other physics modules. Its
+main fields are:
+
+| Field | Description |
+|-------|-------------|
+| `position` | `[x, y, z]` global location of the center of gravity (m) |
+| `orientation` | `[roll, pitch, yaw]` angles in radians |
+| `velocity` | `[u, v, w]` body-frame linear velocities (m/s) |
+| `angularVelocity` | `[p, q, r]` body-frame angular rates (rad/s) |
+| `trailerVelocity` | Trailer linear velocity vector when present |
+| `trailerAngularVelocity` | Trailer angular velocity vector |
+| `lateralAcceleration` | Lateral acceleration $a_y$ (m/s²) |
+| `longitudinalAcceleration` | Longitudinal acceleration $a_x$ (m/s²) |
+
+These variables summarize the instantaneous motion of both tractor and trailer
+and serve as the inputs for computing tire forces, hitch loads and stability
+metrics.
 
 Related parameters: [`trailerHitchDistance`](#param-trailerHitchDistance), [`tractorHitchDistance`](#param-tractorHitchDistance), [`maxDeltaDeg`](#param-maxDeltaDeg), [`I_trailerMultiplier`](#param-I_trailerMultiplier)
 
