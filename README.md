@@ -503,15 +503,15 @@ flowchart LR
   $\hat{p} = p + v t_p[\cos\hat{\theta}, \sin\hat{\theta}]$. It searches the
   path ahead for a target point.  The heading error is
 
-  $$
+  \[
   \alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
-  $$
+  \]
 
   and the raw steering command becomes
 
-  $$
+  \[
 \delta_{pp} = \operatorname{atan2}(2L \sin \alpha,\; d_l)
-  $$
+  \]
 
   `planPathWithPredictions` refines the trajectory and the result passes through Gaussian and low\-pass
   filters to remove zig\-zag oscillations.
@@ -550,9 +550,9 @@ $\hat{\theta} = \theta + \tfrac{v}{L}\tan(\delta) t_p$ and
 $\hat{p} = p + v t_p[\cos\hat{\theta},\sin\hat{\theta}]$ represent the
 predicted heading and position after time $t_p$. From the predicted position
 the controller computes
-$$
+\[
 \alpha = \operatorname{atan2}(y_l - \hat{p}_y,\; x_l - \hat{p}_x) - \hat{\theta}
-$$
+\]
 and distance $d_l$ to the target waypoint. `planPathWithPredictions` then
 adjusts the reference path to eliminate zig\-zag oscillations before the
 Gaussian and low-pass filters and the gear-shift logic are applied.
@@ -623,9 +623,9 @@ The path follower selects a lookahead point ahead of the vehicle to compute the
 target steering angle.  The classical pure pursuit method uses a single point at
 distance $d$ and applies
 
-$$
+\[
 \delta = \tan^{-1}\frac{2L \sin \alpha}{d}
-$$
+\]
 
 where $L$ is the wheelbase and $\alpha$ the heading error.  VDSS extends this by
 projecting several future waypoints, averaging the resulting curvatures and then
@@ -656,9 +656,9 @@ flowchart LR
 *Outputs*: heading error $\alpha$ and lookahead distance $d$.
 
 The algorithm picks the first waypoint at distance $d$ ahead of the vehicle and computes
-$$
+\[
 \alpha = \operatorname{atan2}(y_l - p_y,\; x_l - p_x) - \theta.
-$$
+\]
 
 ###### Compute Curvature
 ```mermaid
@@ -669,7 +669,7 @@ flowchart LR
 *Inputs*: heading error $\alpha$, distance $d$, wheelbase $L$.
 *Output*: raw steering angle $\delta_{pp}$.
 
-$$\delta_{pp} = \tan^{-1}\frac{2L \sin \alpha}{d}$$
+\[\delta_{pp} = \tan^{-1}\tfrac{2L \sin \alpha}{d}\]
 
 ###### Gaussian Filter
 ```mermaid
@@ -680,7 +680,7 @@ flowchart LR
 *Input*: raw steering $\delta_{pp}$.
 *Output*: smoothed value $\delta_g$.
 
-$$\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i].$$
+\[\delta_g[k] = \sum_{i=-n}^n w_i\, \delta_{pp}[k-i]\]
 
 ###### Low-pass Filter
 ```mermaid
@@ -691,7 +691,7 @@ flowchart LR
 *Input*: smoothed command $\delta_g$.
 *Output*: filtered steering angle $\delta$.
 
-$$\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1].$$
+\[\delta[k] = \alpha_f \,\delta_g[k] + (1-\alpha_f)\,\delta[k-1]\]
 
 ###### Ackermann Steering
 ```mermaid
@@ -1150,12 +1150,12 @@ for each simulation step is summarized below.
    - Slip ratio: $\kappa = (\omega R - v_x)/\max(v_x,0.1)$
    - Slip angle: $\alpha = \tan^{-1}(v_y / |v_x|)$
    - Pacejka '96 formula gives the tire forces:
-   $$
+  \[
 \begin{aligned}
 F_x &= D_x \sin\Bigl(C_x \, \tan^{-1}\bigl(B_x \kappa - E_x \bigl(B_x \kappa - \tan^{-1}(B_x \kappa)\bigr)\bigr)\Bigr),\\
 F_y &= D_y \sin\Bigl(C_y \, \tan^{-1}\bigl(B_y \alpha - E_y \bigl(B_y \alpha - \tan^{-1}(B_y \alpha)\bigr)\bigr)\Bigr).
 \end{aligned}
-  $$
+  \]
 
 2. **Force Summation**
     - Aerodynamic drag: $F_d = 0.5 \times \rho \times C_d \times A \times v^2$
@@ -1327,22 +1327,22 @@ kinetic energy is matched.
 For each delta‑V value $\Delta v_{car}$ from the original table we first
 compute the kinetic energy it represents:
 
-$$
+\[
 E = \tfrac{1}{2} m_{\mathrm{car}} \left(\tfrac{\Delta v_{\mathrm{car}}}{3.6}\right)^2
-$$
+\]
 
 where $m_{car}$ is the maximum passenger‑vehicle mass in J2980
 (3000&nbsp;kg). To find the equivalent delta‑V for a heavy vehicle of mass
 $m_{hv}$ the same energy is used:
 
-$$
+\[
 \Delta v_{\mathrm{hv}} = 3.6\sqrt{\tfrac{2E}{m_{\mathrm{hv}}}}
-$$
+\]
 
 This simplifies to a scaling factor
-$$
+\[
 \Delta v_{\mathrm{hv}} = \Delta v_{\mathrm{car}} \sqrt{\tfrac{m_{\mathrm{car}}}{m_{\mathrm{hv}}}}
-$$
+\]
 
 ### Calculation Flow
 
@@ -1355,7 +1355,7 @@ flowchart TD
 
 ### Extended Table for a Class 8 Truck
 Using a fully loaded mass of 36&nbsp;000&nbsp;kg the scaling factor is
-$$\sqrt{\tfrac{3000}{36000}} \approx 0.29$$
+\[\sqrt{\tfrac{3000}{36000}} \approx 0.29\]
 The delta‑V thresholds for each collision type become:
 
 | Severity | Head-On ΔV (kph) | Rear-End ΔV (kph) | Side ΔV (kph) | Oblique ΔV (kph) |
@@ -1374,17 +1374,17 @@ at impact. Assuming an elastic collision between masses $m_1$ and $m_2$ with
 relative speed $v_{\mathrm{rel}}$ and impact angle $\theta$, the post-impact
 delta-V for vehicle&nbsp;1 is
 
-$$
+\[
 \Delta v_{\mathrm{sim}} = \frac{2 m_2}{m_1 + m_2} \, v_{\mathrm{rel}} \cos \theta.
-$$
+\]
 
 The angle $\theta$ is derived from the contact normal in the dynamics engine.
 An occupant severity index follows the exponential relation proposed by
 H.~Smith:
 
-$$
+\[
 \mathrm{OSI} = 1 - e^{-v_{\mathrm{rel}}/v_0},
-$$
+\]
 
 where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
 simulated $\Delta v_{\mathrm{sim}}$ is compared against the heavy-vehicle
