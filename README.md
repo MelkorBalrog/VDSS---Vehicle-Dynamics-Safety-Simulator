@@ -19,6 +19,8 @@ VDSS provides a MATLAB based environment for simulating vehicle dynamics and saf
 - [Physics](#physics)
 - [J2980 Extension for Heavy Vehicles](#j2980-extension-for-heavy-vehicles)
 - [Collision Severity Determination](#collision-severity-determination)
+- [Simulation Output Files](#simulation-output-files)
+- [Plotting and Data Interpretation](#plotting-and-data-interpretation)
 
 ## Directory Structure
 - `Source/` – MATLAB toolboxes that implement the simulator.
@@ -48,7 +50,6 @@ includes sample spreadsheets illustrating the expected layout:
 | `Curves/sedan_DecelCurve.xlsx` | Max braking decel by speed (m/s vs m/s²). | `0\t-2.4`, `1\t-2.2`, `2\t-2.0` |
 | `Curves/sedan_SteeringCurve.xlsx` | Steering limits (m/s vs deg). | `0\t35`, `5\t30`, `10\t25` |
 | `Class8Truck_And_Sedan_CollisionFrontEnd.xml` | Sample heavy vehicle setup with gear ratios, masses and waypoints. | `<tractorMass>9070</tractorMass>` |
-
 
 ## Toolboxes
 ### Plotting
@@ -151,8 +152,9 @@ Each mechanical block acts as a black box with defined inputs and outputs:
   $T_w$ and updated gear ratio.
 - **BrakeSystem** – input: brake command `u_b`; output braking torque
   $T_b = u_b \times \mathrm{maxBrakingForce} \times \mathrm{brakeEfficiency}$
-- **LeafSpringSuspension** – inputs: spring deflection $\Delta x$ and
-  velocity `v`; output suspension force $F_s$.
+ - **LeafSpringSuspension** – inputs: vertical displacement $\Delta x$, vertical
+   velocity $v$, lateral acceleration $a_y$, longitudinal acceleration $a_x$,
+   moment arm and current wheel load; output suspension force $F_s$.
 - **AckermannGeometry** – input: desired steering angle $\delta$;
   outputs inner and outer wheel angles calculated via
   $\tan\delta_{i,o} = \tfrac{L}{R \mp W/2}$ where `L` is wheelbase and
@@ -160,9 +162,10 @@ Each mechanical block acts as a black box with defined inputs and outputs:
 - **Pacejka96TireModel** – inputs: slip angle $\alpha$, slip ratio $\kappa$
   and normal load $F_z$; outputs lateral and longitudinal forces using the
   formulas above.
-  - **HitchModel** – inputs: tractor and trailer state structures containing
-    position, yaw orientation and body-frame velocities; outputs hitch forces,
-    moments and the articulated angle integrated with RK4.
+  - **HitchModel** – inputs: full tractor and trailer state structures
+    (positions, orientations, linear and angular velocities) plus the applied
+    pulling force; outputs hitch forces, moments and the articulation angle
+    integrated with RK4.
 
 ##### Detailed Block Descriptions
 Each mechanical block can be viewed as a self contained subsystem described by
@@ -261,11 +264,21 @@ Related parameters: [`maxBrakingForce`](#param-maxBrakingForce), [`brakingForce`
 flowchart LR
   dx(["Δx"])
   vel(["v"])
+  ay(["a_y"])
+  ax(["a_x"])
+  load(["load"])
+  arm(["moment"])
   dx --> Suspension
   vel --> Suspension
+  ay --> Suspension
+  ax --> Suspension
+  load --> Suspension
+  arm --> Suspension
   Suspension --> F_s(["F_s"])
 ```
-*Inputs*: spring deflection $\Delta x$, velocity `v`
+*Inputs*: vertical displacement $\Delta x$, vertical velocity `v`, lateral
+acceleration $a_y$, longitudinal acceleration $a_x$, moment arm and current
+wheel load
 *Outputs*: suspension force $F_s$
 
 Suspension forces use a spring damper relation
@@ -311,12 +324,17 @@ Related parameters: [`pCx1..pKy3`](#param-pacejka), [`tractorTireHeight`](#param
 ###### HitchModel
 ```mermaid
 flowchart LR
-  states(["states"])
-  states --> Hitch
+  tractorState(["tractor state"])
+  trailerState(["trailer state"])
+  pullForce(["pull force"])
+  tractorState --> Hitch
+  trailerState --> Hitch
+  pullForce --> Hitch
   Hitch --> F_h(["F_h"])
   Hitch --> delta(["δ"])
 ```
-*Inputs*: tractor/trailer states
+*Inputs*: tractor and trailer states with position, orientation and velocity
+components, along with the longitudinal pulling force
 *Outputs*: hitch forces and articulation angle
 
 The hitch imposes a rotational spring\–damper torque
@@ -1328,3 +1346,30 @@ $$
 where $v_0 \approx 30\,\mathrm{kph}$ is a calibration constant. Finally the
 simulated $\Delta v_{\mathrm{sim}}$ is compared against the heavy-vehicle
 thresholds in the extended J2980 table to classify the crash as S0–S3.
+
+## Simulation Output Files
+After each run VDSS saves several files alongside the chosen configuration.  The
+main results are stored in a MATLAB ``.mat`` file whose name starts with the
+simulation name (for example ``simulation_Vehicle1_CollisionSideEnd.mat``).  The
+MAT-file contains time stamped arrays for position, orientation, velocities,
+accelerations, control commands and, when present, trailer states.  Typical
+fields include ``Time``, ``PositionX``, ``PositionY``, ``Orientation``,
+``VelocityU``, ``LateralVelocityV``, ``YawRateR``, ``RollAngle`` and
+``AccelerationLongitudinal``.  Additional signals such as jerk, throttle,
+gear and horse power are also exported.  If a trailer is enabled the file adds
+``TrailerX``/``TrailerY`` and articulation angles.
+
+Text and CSV log files are written using ``VehicleModel.saveLogs``.  These files
+share the simulation name and record informational messages printed during the
+run.  When collision analysis is active ``PlotManager`` produces a
+``collision_severity_report_<timestamp>.txt`` summarizing delta‑V calculations.
+A PNG image of the stability flags over time is also saved for reference.
+
+## Plotting and Data Interpretation
+The ``Scripts`` directory includes ``plotVehicleMotionResults.m`` which loads a
+saved ``.mat`` file and generates a comprehensive set of figures.  Edit the
+``data_file`` variable inside the script to point to your simulation output and
+run it in MATLAB.  The script computes steering wheel rate, converts velocities
+to kilometers per hour and displays each signal in a tiled layout.  Jerk and
+force data are plotted in separate windows.  All processed signals are exported
+to ``SteeringRateData.csv`` for further analysis.
